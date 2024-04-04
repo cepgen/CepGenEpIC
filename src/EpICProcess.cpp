@@ -124,10 +124,10 @@ private:
   void fillKinematics() override {}
 
   std::vector<char*> parseArguments() const {
-    std::vector<std::string> args{fs::canonical("/proc/self/exe").parent_path().parent_path() / "partons" /
-                                  "partons.properties"};
-    args.emplace_back(utils::format("--seed=%zu", seed_));
-    args.emplace_back("--scenario=" + scenario_file_);
+    const auto args = std::vector<std::string>{fs::current_path() / "data" / "partons.properties",
+                                               utils::format("--seed=%zu", seed_),
+                                               "--scenario=" + scenario_file_};
+    CG_DEBUG("EpICProcess:parseArguments") << "List of arguments handled:\n\t" << args << ".";
     std::vector<char*> argv;
     std::transform(args.begin(), args.end(), std::back_inserter(argv), [](const std::string& str) -> char* {
       char* out = new char[str.size() + 1];
