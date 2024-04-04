@@ -18,18 +18,18 @@ xml.schema.epic.file.path = @EPIC_DIRS@/data/xmlSchema.epic.xsd
 # DATABASE #
 
 # Database connection definition (for more information see our tutorial explaining the database usage)
-#database.production.type = MYSQL
-#database.production.url = localhost
-#database.production.port = 3306
-#database.production.dbname = partons
-#database.production.user =  partons
-#database.production.passwd = partons
+database.production.type = MYSQL
+database.production.url = localhost
+database.production.port = 3306
+database.production.dbname = partons
+database.production.user =  partons
+database.production.passwd = partons
 
 # Whether to use temporary file transaction to load data
-#database.load.infile.use = false
+database.load.infile.use = false
 
 # Temporary working directory needed by the transaction mechanism (if database.load.infile.use is true)
-#database.load.infile.directory = partons/tmp
+database.load.infile.directory = partons/tmp
 
 # THREAD #
 

@@ -22,6 +22,16 @@ if(NOT PARTONS_FOUND)
   message(STATUS "EpIC was found, but not PARTONS.")
   return()
 endif()
+
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+find_package(Qt5 COMPONENTS Core Sql XmlPatterns)
+find_package(Qt5Widgets)
+message("-- Found Qt5: " ${Qt5Widgets_VERSION})
+set(QT_LIBRARY_CORE "Qt5::Core")
+set(QT_LIBRARY_SQL "Qt5::Sql")
+set(QT_LIBRARY_XML "Qt5::XmlPatterns")
+
 find_package(GSL REQUIRED)
 find_package(SFML COMPONENTS system REQUIRED)
 find_package(ElementaryUtils REQUIRED)
@@ -39,10 +49,12 @@ configure_file(data/logger.properties.in ${CMAKE_CURRENT_BINARY_DIR}/data/logger
 
 #----- build the object
 add_library(CepGenEpIC SHARED ${cepgen_epic_sources} ${epic_sources})
-target_link_libraries(CepGenEpIC PUBLIC
+target_link_libraries(CepGenEpIC PRIVATE
     ${CepGen_LIBRARIES}
-    ${GSL_LIBRARIES} ${SFML_LIBRARIES} ${ElementaryUtils_LIBRARIES} ${NumA++_LIBRARIES} ${PARTONS_LIBRARIES} ${Apfel++_LIBRARIES} ${ROOT_LIBRARIES} ${HEPMC3_LIBRARIES})
+    ${GSL_LIBRARIES} ${SFML_LIBRARIES} ${ElementaryUtils_LIBRARIES} ${NumA++_LIBRARIES} ${PARTONS_LIBRARIES} ${Apfel++_LIBRARIES} ${ROOT_LIBRARIES} ${HEPMC3_LIBRARIES}
+    ${QT_LIBRARIES} ${QT_LIBRARY_CORE} ${QT_LIBRARY_SQL} ${QT_LIBRARY_XML})
 target_include_directories(CepGenEpIC PRIVATE
     ${CepGen_INCLUDE_DIRS}
-    ${EPIC_INCLUDE} ${GSL_INCLUDE_DIRS} ${QT_INCLUDE_DIRS} ${SFML_INCLUDE_DIR} ${ElementaryUtils_INCLUDE_DIR} ${NumA++_INCLUDE_DIR} ${PARTONS_INCLUDE_DIR} ${Apfel++_INCLUDE_DIR} ${ROOT_INCLUDE_DIRS} ${HEPMC3_INCLUDE_DIR})
+    ${EPIC_INCLUDE} ${GSL_INCLUDE_DIRS} ${SFML_INCLUDE_DIR} ${ElementaryUtils_INCLUDE_DIR} ${NumA++_INCLUDE_DIR} ${PARTONS_INCLUDE_DIR} ${Apfel++_INCLUDE_DIR} ${ROOT_INCLUDE_DIRS} ${HEPMC3_INCLUDE_DIR}
+    ${QT_INCLUDE_DIRS})
 target_compile_options(CepGenEpIC PRIVATE "-Wno-deprecated-copy")

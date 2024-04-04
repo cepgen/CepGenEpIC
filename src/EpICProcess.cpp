@@ -22,14 +22,12 @@
 #include <CepGen/Process/Process.h>
 #include <CepGen/Utils/Filesystem.h>
 #include <CepGen/Utils/String.h>
+#include <QtCore/qcoreapplication.h>
 
 #include <cstring>
 
 // Partons includes
 #include <ElementaryUtils/logger/CustomException.h>
-#include <partons/Partons.h>
-#include <partons/ServiceObjectRegistry.h>
-#include <partons/services/automation/AutomationService.h>
 
 // EpIC includes
 #include <Epic.h>
@@ -49,26 +47,23 @@
 using namespace cepgen;
 using namespace std::string_literals;
 
+static std::unique_ptr<QCoreApplication> kQtApp{nullptr};
+
 /// Interface object to an EpIC process
 class EpICProcess final : public cepgen::proc::Process {
 public:
   explicit EpICProcess(const ParametersList& params)
-      : cepgen::proc::Process(params),
-        seed_(steer<unsigned long long>("seed")),
-        scenario_file_(steerPath("scenario")),
-        epic_(EPIC::Epic::getInstance()),
-        partons_(PARTONS::Partons::getInstance()) {
+      : cepgen::proc::Process(params), seed_(steer<unsigned long long>("seed")), scenario_file_(steerPath("scenario")) {
     try {  // initialise Partons/EpIC with an argc/argv pair
       auto args = parseArguments();
-      partons_->init(args.size(), args.data());
+      int argc = args.size();
+      if (!kQtApp)
+        kQtApp.reset(new QCoreApplication(argc, args.data()));
+      epic_.reset(EPIC::Epic::getInstance());
       epic_->init(args.size(), args.data());
     } catch (const ElemUtils::CustomException& exc) {
       throw CG_FATAL("EpICProcess") << "Fatal EpIC/Partons exception: " << exc.what();
     }
-    // steer Partons with the scenario card
-    auto* pAutomationService = partons_->getServiceObjectRegistry()->getAutomationService();
-    auto* pScenario = pAutomationService->parseXMLFile(scenario_file_);
-    pAutomationService->playScenario(pScenario);
     // initialise the EpIC instance
     epic_->getRandomSeedManager()->setSeedCount(seed_);
   }
@@ -77,8 +72,6 @@ public:
   ~EpICProcess() {
     if (epic_)
       epic_->close();
-    if (partons_)
-      partons_->close();
   }
 
   proc::ProcessPtr clone() const override { return proc::ProcessPtr(new EpICProcess(*this)); }
@@ -139,7 +132,6 @@ private:
   const unsigned long long seed_;
   const std::string scenario_file_;
   std::shared_ptr<EPIC::Epic> epic_{nullptr};
-  std::shared_ptr<PARTONS::Partons> partons_{nullptr};
   std::unique_ptr<epic::ProcessInterface> epic_proc_{nullptr};
   std::vector<double> coords_;
 };
