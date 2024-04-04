@@ -22,7 +22,7 @@ default.level = INFO
 # COUT   - standard output only
 # FILE   - text file only
 # BOTH   - both standard output and text file
-print.mode = BOTH
+print.mode = COUT
 
 # Path to the directory containing Logger output text files
 log.folder.path = @CMAKE_CURRENT_BINARY_DIR@
