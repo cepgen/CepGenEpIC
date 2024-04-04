@@ -7,6 +7,8 @@ set(PARTONS_DIRS ${PARTONS_DIRS} $ENV{PARTONS_DIR})
 
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/cmake ${CEPGEN_PATH}/cmake ${PARTONS_DIR}/cmake/Modules ${PARTONS_DIR}/partons/cmake/Modules)
 
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+
 find_package(CepGen REQUIRED)
 find_path(EPIC_SOURCES_DIR NAMES Epic.cpp HINTS ${EPIC_DIRS} PATH_SUFFIXES src)
 find_path(EPIC_INCLUDE NAMES Epic.h HINTS ${EPIC_DIRS} PATH_SUFFIXES include)

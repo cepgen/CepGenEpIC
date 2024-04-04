@@ -16,15 +16,27 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <CepGen/Core/Exception.h>
+#include <CepGen/Event/Event.h>
+#include <CepGen/Modules/ProcessFactory.h>
+#include <CepGen/Process/Process.h>
+#include <CepGen/Utils/Filesystem.h>
+#include <CepGen/Utils/String.h>
+
+#include <cstring>
+
+// Partons includes
 #include <ElementaryUtils/logger/CustomException.h>
+#include <partons/Partons.h>
+#include <partons/ServiceObjectRegistry.h>
+#include <partons/services/automation/AutomationService.h>
+
+// EpIC includes
 #include <Epic.h>
 #include <automation/MonteCarloScenario.h>
 #include <automation/MonteCarloTask.h>
 #include <managers/RandomSeedManager.h>
 #include <managers/ServiceObjectRegistry.h>
-#include <partons/Partons.h>
-#include <partons/ServiceObjectRegistry.h>
-#include <partons/services/automation/AutomationService.h>
 #include <services/AutomationService.h>
 #include <services/DDVCSGeneratorService.h>
 #include <services/DVCSGeneratorService.h>
@@ -32,14 +44,7 @@
 #include <services/GAM2GeneratorService.h>
 #include <services/TCSGeneratorService.h>
 
-#include <cstring>
-
-#include "CepGen/Core/Exception.h"
-#include "CepGen/Event/Event.h"
-#include "CepGen/Modules/ProcessFactory.h"
-#include "CepGen/Process/Process.h"
-#include "CepGen/Utils/Filesystem.h"
-#include "CepGen/Utils/String.h"
+#include "CepGenEpIC/ProcessInterface.h"
 
 using namespace cepgen;
 using namespace std::string_literals;
@@ -66,40 +71,9 @@ public:
     pAutomationService->playScenario(pScenario);
     // initialise the EpIC instance
     epic_->getRandomSeedManager()->setSeedCount(seed_);
-    auto scenario = EPIC::AutomationService::getInstance()->parseXMLFile(scenario_file_);
-    for (auto it : scenario->getTasks()) {
-      if (it.getServiceName() == "DVCSGeneratorService") {
-        auto* generatorService = epic_->getServiceObjectRegistry()->getDVCSGeneratorService();
-        generatorService->setScenarioDescription(scenario->getDescription());
-        generatorService->setScenarioDate(scenario->getDate());
-        generatorService->computeTask(it);
-      }
-      if (it.getServiceName() == "TCSGeneratorService") {
-        auto* generatorService = epic_->getServiceObjectRegistry()->getTCSGeneratorService();
-        generatorService->setScenarioDescription(scenario->getDescription());
-        generatorService->setScenarioDate(scenario->getDate());
-        generatorService->computeTask(it);
-      }
-      if (it.getServiceName() == "DVMPGeneratorService") {
-        auto* generatorService = epic_->getServiceObjectRegistry()->getDVMPGeneratorService();
-        generatorService->setScenarioDescription(scenario->getDescription());
-        generatorService->setScenarioDate(scenario->getDate());
-        generatorService->computeTask(it);
-      }
-      if (it.getServiceName() == "GAM2GeneratorService") {
-        auto* generatorService = epic_->getServiceObjectRegistry()->getGAM2GeneratorService();
-        generatorService->setScenarioDescription(scenario->getDescription());
-        generatorService->setScenarioDate(scenario->getDate());
-        generatorService->computeTask(it);
-      }
-      if (it.getServiceName() == "DDVCSGeneratorService") {
-        auto* generatorService = epic_->getServiceObjectRegistry()->getDDVCSGeneratorService();
-        generatorService->setScenarioDescription(scenario->getDescription());
-        generatorService->setScenarioDate(scenario->getDate());
-        generatorService->computeTask(it);
-      }
-    }
   }
+  EpICProcess(const EpICProcess& oth) : EpICProcess(oth.parameters()) {}
+
   ~EpICProcess() {
     if (epic_)
       epic_->close();
@@ -118,9 +92,34 @@ public:
   }
 
 private:
-  void prepareKinematics() override {}
+  void prepareKinematics() override {
+    auto scenario = EPIC::AutomationService::getInstance()->parseXMLFile(scenario_file_);
+    for (auto it : scenario->getTasks()) {
+      const auto& name = it.getServiceName();
+      if (name == "DVCSGeneratorService")
+        epic_proc_.reset(
+            new epic::ServiceInterface(epic_->getServiceObjectRegistry()->getDVCSGeneratorService(), scenario));
+      else if (name == "TCSGeneratorService")
+        epic_proc_.reset(
+            new epic::ServiceInterface(epic_->getServiceObjectRegistry()->getTCSGeneratorService(), scenario));
+      else if (name == "DVMPGeneratorService")
+        epic_proc_.reset(
+            new epic::ServiceInterface(epic_->getServiceObjectRegistry()->getDVMPGeneratorService(), scenario));
+      else if (name == "GAM2GeneratorService")
+        epic_proc_.reset(
+            new epic::ServiceInterface(epic_->getServiceObjectRegistry()->getGAM2GeneratorService(), scenario));
+      else if (name == "DDVCSGeneratorService")
+        epic_proc_.reset(
+            new epic::ServiceInterface(epic_->getServiceObjectRegistry()->getDDVCSGeneratorService(), scenario));
+    }
+    coords_.clear();
+    for (size_t i = 0; i < 10; ++i) {
+      auto& coord = coords_.emplace_back();
+      defineVariable(coord, Mapping::linear, {0., 1.}, utils::format("x_%zu", i));
+    }
+  }
   void addEventContent() override {}
-  double computeWeight() override { return 1.; }
+  double computeWeight() override { return epic_proc_->weight(coords_); }
   void fillKinematics() override {}
 
   std::vector<char*> parseArguments() const {
@@ -141,5 +140,7 @@ private:
   const std::string scenario_file_;
   std::shared_ptr<EPIC::Epic> epic_{nullptr};
   std::shared_ptr<PARTONS::Partons> partons_{nullptr};
+  std::unique_ptr<epic::ProcessInterface> epic_proc_{nullptr};
+  std::vector<double> coords_;
 };
 REGISTER_PROCESS("epic", EpICProcess);
