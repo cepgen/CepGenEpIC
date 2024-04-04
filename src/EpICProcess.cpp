@@ -48,33 +48,25 @@ using namespace std::string_literals;
 class EpICProcess final : public cepgen::proc::Process {
 public:
   explicit EpICProcess(const ParametersList& params)
-      : cepgen::proc::Process(params), epic_(EPIC::Epic::getInstance()), partons_(PARTONS::Partons::getInstance()) {
-    const auto seed = steer<unsigned long long>("seed");
-    const auto scenario_file = steerPath("scenario");
-    // initialise Partons/EpIC with an argc/argv pair
-    std::vector<std::string> args{fs::canonical("/proc/self/exe").parent_path().parent_path() / "partons" /
-                                  "partons.properties"};
-    args.emplace_back(utils::format("--seed=%zu", seed));
-    args.emplace_back("--scenario=" + scenario_file);
-    std::vector<char*> argv;
-    std::transform(args.begin(), args.end(), std::back_inserter(argv), [](const std::string& str) -> char* {
-      char* out = new char[str.size() + 1];
-      std::strcpy(out, str.data());
-      return out;
-    });
-    try {
-      partons_->init(args.size(), argv.data());
-      epic_->init(args.size(), argv.data());
+      : cepgen::proc::Process(params),
+        seed_(steer<unsigned long long>("seed")),
+        scenario_file_(steerPath("scenario")),
+        epic_(EPIC::Epic::getInstance()),
+        partons_(PARTONS::Partons::getInstance()) {
+    try {  // initialise Partons/EpIC with an argc/argv pair
+      auto args = parseArguments();
+      partons_->init(args.size(), args.data());
+      epic_->init(args.size(), args.data());
     } catch (const ElemUtils::CustomException& exc) {
       throw CG_FATAL("EpICProcess") << "Fatal EpIC/Partons exception: " << exc.what();
     }
     // steer Partons with the scenario card
     auto* pAutomationService = partons_->getServiceObjectRegistry()->getAutomationService();
-    auto* pScenario = pAutomationService->parseXMLFile(scenario_file);
+    auto* pScenario = pAutomationService->parseXMLFile(scenario_file_);
     pAutomationService->playScenario(pScenario);
     // initialise the EpIC instance
-    epic_->getRandomSeedManager()->setSeedCount(seed);
-    auto scenario = EPIC::AutomationService::getInstance()->parseXMLFile(scenario_file);
+    epic_->getRandomSeedManager()->setSeedCount(seed_);
+    auto scenario = EPIC::AutomationService::getInstance()->parseXMLFile(scenario_file_);
     for (auto it : scenario->getTasks()) {
       if (it.getServiceName() == "DVCSGeneratorService") {
         auto* generatorService = epic_->getServiceObjectRegistry()->getDVCSGeneratorService();
@@ -131,6 +123,22 @@ private:
   double computeWeight() override { return 1.; }
   void fillKinematics() override {}
 
+  std::vector<char*> parseArguments() const {
+    std::vector<std::string> args{fs::canonical("/proc/self/exe").parent_path().parent_path() / "partons" /
+                                  "partons.properties"};
+    args.emplace_back(utils::format("--seed=%zu", seed_));
+    args.emplace_back("--scenario=" + scenario_file_);
+    std::vector<char*> argv;
+    std::transform(args.begin(), args.end(), std::back_inserter(argv), [](const std::string& str) -> char* {
+      char* out = new char[str.size() + 1];
+      std::strcpy(out, str.data());
+      return out;
+    });
+    return argv;
+  }
+
+  const unsigned long long seed_;
+  const std::string scenario_file_;
   std::shared_ptr<EPIC::Epic> epic_{nullptr};
   std::shared_ptr<PARTONS::Partons> partons_{nullptr};
 };
