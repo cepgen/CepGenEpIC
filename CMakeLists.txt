@@ -33,7 +33,8 @@ file(GLOB_RECURSE epic_sources ${EPIC_SOURCES_DIR}/*.cpp)
 
 #----- build the object
 add_library(CepGenEpIC SHARED ${cepgen_epic_sources} ${epic_sources})
-target_link_libraries(CepGenEpIC PRIVATE
+target_link_libraries(CepGenEpIC PUBLIC
+    ${CepGen_LIBRARIES}
     ${GSL_LIBRARIES} ${SFML_LIBRARIES} ${ElementaryUtils_LIBRARIES} ${NumA++_LIBRARIES} ${PARTONS_LIBRARIES} ${Apfel++_LIBRARIES} ${ROOT_LIBRARIES} ${HEPMC3_LIBRARIES})
 target_include_directories(CepGenEpIC PRIVATE
     ${CepGen_INCLUDE_DIRS}
