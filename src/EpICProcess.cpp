@@ -19,6 +19,7 @@
 #include <CepGen/Core/Exception.h>
 #include <CepGen/Event/Event.h>
 #include <CepGen/Modules/ProcessFactory.h>
+#include <CepGen/Physics/PDG.h>
 #include <CepGen/Process/Process.h>
 #include <CepGen/Utils/Filesystem.h>
 #include <CepGen/Utils/String.h>
@@ -59,13 +60,9 @@ public:
       int argc = args.size();
       if (!kQtApp)
         kQtApp.reset(new QCoreApplication(argc, args.data()));
-      epic_.reset(EPIC::Epic::getInstance());
-      epic_->init(args.size(), args.data());
     } catch (const ElemUtils::CustomException& exc) {
       throw CG_FATAL("EpICProcess") << "Fatal EpIC/Partons exception: " << exc.what();
     }
-    // initialise the EpIC instance
-    epic_->getRandomSeedManager()->setSeedCount(seed_);
   }
   EpICProcess(const EpICProcess& oth) : EpICProcess(oth.parameters()) {}
 
@@ -86,6 +83,11 @@ public:
 
 private:
   void prepareKinematics() override {
+    // initialise the EpIC instance
+    epic_.reset(EPIC::Epic::getInstance());
+    auto args = parseArguments();
+    epic_->init(args.size(), args.data());
+    epic_->getRandomSeedManager()->setSeedCount(seed_);
     auto scenario = EPIC::AutomationService::getInstance()->parseXMLFile(scenario_file_);
     for (auto it : scenario->getTasks()) {
       const auto& name = it.getServiceName();
@@ -104,6 +106,7 @@ private:
       else if (name == "DDVCSGeneratorService")
         epic_proc_.reset(
             new epic::ServiceInterface(epic_->getServiceObjectRegistry()->getDDVCSGeneratorService(), scenario));
+      CG_INFO("EpICProcess:prepareKinematics") << "New '" << name << "' task built.";
     }
     coords_.clear();
     for (size_t i = 0; i < 10; ++i) {
@@ -111,7 +114,15 @@ private:
       defineVariable(coord, Mapping::linear, {0., 1.}, utils::format("x_%zu", i));
     }
   }
-  void addEventContent() override {}
+  void addEventContent() override {
+    proc::Process::setEventContent({{Particle::IncomingBeam1, {PDG::electron}},
+                                    {Particle::IncomingBeam2, {PDG::proton}},
+                                    {Particle::Parton1, {PDG::photon}},
+                                    {Particle::Parton2, {PDG::photon}},
+                                    {Particle::OutgoingBeam1, {PDG::electron}},
+                                    {Particle::OutgoingBeam2, {PDG::proton}},
+                                    {Particle::CentralSystem, {}}});
+  }
   double computeWeight() override { return epic_proc_->weight(coords_); }
   void fillKinematics() override {}
 
@@ -131,7 +142,7 @@ private:
 
   const unsigned long long seed_;
   const std::string scenario_file_;
-  std::shared_ptr<EPIC::Epic> epic_{nullptr};
+  std::unique_ptr<EPIC::Epic> epic_{nullptr};
   std::unique_ptr<epic::ProcessInterface> epic_proc_{nullptr};
   std::vector<double> coords_;
 };
