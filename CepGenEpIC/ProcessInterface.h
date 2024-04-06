@@ -19,6 +19,7 @@
 #ifndef CepGenEpIC_ProcessInterface_h
 #define CepGenEpIC_ProcessInterface_h
 
+#include <CepGen/Core/Exception.h>
 #include <automation/MonteCarloTask.h>
 #include <services/GeneratorService.h>
 
@@ -38,44 +39,42 @@ namespace cepgen {
     class GeneratorServiceInterface : public EPIC::GeneratorService<Kr, P, Km, R> {
     public:
       using EGS = EPIC::GeneratorService<Kr, P, Km, R>;
-
-      explicit GeneratorServiceInterface(const EGS& service) : EGS(service) {}
+      using EGS::EGS;
 
       void initialise(const EPIC::MonteCarloTask& task) {
-        CG_WARNING("") << 1;
         EGS::getGeneralConfigurationFromTask(task);
-        CG_WARNING("") << 2;
-        EGS::getAdditionalGeneralConfigurationFromTask(task);
+        //EGS::getAdditionalGeneralConfigurationFromTask(task);
         EGS::getExperimentalConditionsFromTask(task);
-        EGS::getKinematicRangesFromTask(task);
-        EGS::getProcessModuleFromTask(task);
+        //EGS::getKinematicRangesFromTask(task);
+        //EGS::getProcessModuleFromTask(task);
         EGS::getEventGeneratorModuleFromTask(task);
-        EGS::getKinematicModuleFromTask(task);
-        EGS::getRCModuleFromTask(task);
+        //EGS::getKinematicModuleFromTask(task);
+        //EGS::getRCModuleFromTask(task);
         //EGS::getWriterModuleFromTask(task);
       }
     };
     /// Interface to an EpIC generator service
     template <class Kr, class P, class Km, class R>
-    class ServiceInterface : public ProcessInterface {
+    class ProcessServiceInterface : public ProcessInterface {
     public:
       using EGS = EPIC::GeneratorService<Kr, P, Km, R>;
       using GSI = GeneratorServiceInterface<Kr, P, Km, R>;
 
-      explicit ServiceInterface(EGS* service,
-                                //const std::shared_ptr<EPIC::MonteCarloScenario>& scenario,
-                                const EPIC::MonteCarloScenario& scenario,
-                                const EPIC::MonteCarloTask& task)
-          : service_(service) {
+      explicit ProcessServiceInterface(EGS* service,
+                                       const EPIC::MonteCarloScenario& scenario,
+                                       const EPIC::MonteCarloTask& task)
+          : service_(reinterpret_cast<GSI*>(service)) {
+        if (!service_)
+          throw CG_FATAL("ProcessServiceInterface")
+              << "Failed to interface the EPIC generator service to build a CepGen-compatible process definition.";
         service_->setScenarioDescription(scenario.getDescription());
         service_->setScenarioDate(scenario.getDate());
-        interface()->initialise(task);
+        service_->initialise(task);
       }
       double weight(std::vector<double>& coords) const override { return service_->getEventDistribution(coords); }
 
     private:
-      EGS* service_;
-      GSI* interface() { return dynamic_cast<GSI*>(service_); }
+      GSI* service_{nullptr};
     };
   }  // namespace epic
 }  // namespace cepgen

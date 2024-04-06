@@ -92,20 +92,20 @@ private:
     for (auto& it : scenario_->getTasks()) {
       const auto& name = it.getServiceName();
       if (name == "DVCSGeneratorService")
-        epic_proc_.reset(
-            new epic::ServiceInterface(epic_->getServiceObjectRegistry()->getDVCSGeneratorService(), *scenario_, it));
+        epic_proc_.reset(new epic::ProcessServiceInterface(
+            epic_->getServiceObjectRegistry()->getDVCSGeneratorService(), *scenario_, it));
       else if (name == "TCSGeneratorService")
-        epic_proc_.reset(
-            new epic::ServiceInterface(epic_->getServiceObjectRegistry()->getTCSGeneratorService(), *scenario_, it));
+        epic_proc_.reset(new epic::ProcessServiceInterface(
+            epic_->getServiceObjectRegistry()->getTCSGeneratorService(), *scenario_, it));
       else if (name == "DVMPGeneratorService")
-        epic_proc_.reset(
-            new epic::ServiceInterface(epic_->getServiceObjectRegistry()->getDVMPGeneratorService(), *scenario_, it));
+        epic_proc_.reset(new epic::ProcessServiceInterface(
+            epic_->getServiceObjectRegistry()->getDVMPGeneratorService(), *scenario_, it));
       else if (name == "GAM2GeneratorService")
-        epic_proc_.reset(
-            new epic::ServiceInterface(epic_->getServiceObjectRegistry()->getGAM2GeneratorService(), *scenario_, it));
+        epic_proc_.reset(new epic::ProcessServiceInterface(
+            epic_->getServiceObjectRegistry()->getGAM2GeneratorService(), *scenario_, it));
       else if (name == "DDVCSGeneratorService")
-        epic_proc_.reset(
-            new epic::ServiceInterface(epic_->getServiceObjectRegistry()->getDDVCSGeneratorService(), *scenario_, it));
+        epic_proc_.reset(new epic::ProcessServiceInterface(
+            epic_->getServiceObjectRegistry()->getDDVCSGeneratorService(), *scenario_, it));
       CG_INFO("EpICProcess:prepareKinematics") << "New '" << name << "' task built.";
     }
     coords_.clear();
