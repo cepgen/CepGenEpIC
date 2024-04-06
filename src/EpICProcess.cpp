@@ -33,7 +33,6 @@
 // EpIC includes
 #include <Epic.h>
 #include <automation/MonteCarloScenario.h>
-#include <automation/MonteCarloTask.h>
 #include <managers/RandomSeedManager.h>
 #include <managers/ServiceObjectRegistry.h>
 #include <services/AutomationService.h>
@@ -78,41 +77,43 @@ public:
     desc.setDescription("EpIC process");
     desc.add("scenario", ""s).setDescription("path to xml scenario");
     desc.add("seed", 42ull).setDescription("initial random seed");
+    desc.add("process", ""s).setDescription("type of process to consider");
     return desc;
   }
 
 private:
   void prepareKinematics() override {
     // initialise the EpIC instance
-    epic_.reset(EPIC::Epic::getInstance());
     auto args = parseArguments();
+    epic_ = EPIC::Epic::getInstance();
     epic_->init(args.size(), args.data());
     epic_->getRandomSeedManager()->setSeedCount(seed_);
-    auto scenario = EPIC::AutomationService::getInstance()->parseXMLFile(scenario_file_);
-    for (auto it : scenario->getTasks()) {
+    scenario_ = EPIC::AutomationService::getInstance()->parseXMLFile(scenario_file_);
+    for (auto& it : scenario_->getTasks()) {
       const auto& name = it.getServiceName();
       if (name == "DVCSGeneratorService")
         epic_proc_.reset(
-            new epic::ServiceInterface(epic_->getServiceObjectRegistry()->getDVCSGeneratorService(), scenario));
+            new epic::ServiceInterface(epic_->getServiceObjectRegistry()->getDVCSGeneratorService(), *scenario_, it));
       else if (name == "TCSGeneratorService")
         epic_proc_.reset(
-            new epic::ServiceInterface(epic_->getServiceObjectRegistry()->getTCSGeneratorService(), scenario));
+            new epic::ServiceInterface(epic_->getServiceObjectRegistry()->getTCSGeneratorService(), *scenario_, it));
       else if (name == "DVMPGeneratorService")
         epic_proc_.reset(
-            new epic::ServiceInterface(epic_->getServiceObjectRegistry()->getDVMPGeneratorService(), scenario));
+            new epic::ServiceInterface(epic_->getServiceObjectRegistry()->getDVMPGeneratorService(), *scenario_, it));
       else if (name == "GAM2GeneratorService")
         epic_proc_.reset(
-            new epic::ServiceInterface(epic_->getServiceObjectRegistry()->getGAM2GeneratorService(), scenario));
+            new epic::ServiceInterface(epic_->getServiceObjectRegistry()->getGAM2GeneratorService(), *scenario_, it));
       else if (name == "DDVCSGeneratorService")
         epic_proc_.reset(
-            new epic::ServiceInterface(epic_->getServiceObjectRegistry()->getDDVCSGeneratorService(), scenario));
+            new epic::ServiceInterface(epic_->getServiceObjectRegistry()->getDDVCSGeneratorService(), *scenario_, it));
       CG_INFO("EpICProcess:prepareKinematics") << "New '" << name << "' task built.";
     }
     coords_.clear();
-    for (size_t i = 0; i < 10; ++i) {
+    for (size_t i = 0; i < 20; ++i) {
       auto& coord = coords_.emplace_back();
       defineVariable(coord, Mapping::linear, {0., 1.}, utils::format("x_%zu", i));
     }
+    CG_DEBUG("EpICProcess:prepareKinematics") << "Phase space mapped for dim-" << coords_.size() << " integrand.";
   }
   void addEventContent() override {
     proc::Process::setEventContent({{Particle::IncomingBeam1, {PDG::electron}},
@@ -121,7 +122,7 @@ private:
                                     {Particle::Parton2, {PDG::photon}},
                                     {Particle::OutgoingBeam1, {PDG::electron}},
                                     {Particle::OutgoingBeam2, {PDG::proton}},
-                                    {Particle::CentralSystem, {}}});
+                                    {Particle::CentralSystem, {PDG::muon, PDG::muon}}});
   }
   double computeWeight() override { return epic_proc_->weight(coords_); }
   void fillKinematics() override {}
@@ -142,8 +143,9 @@ private:
 
   const unsigned long long seed_;
   const std::string scenario_file_;
-  std::unique_ptr<EPIC::Epic> epic_{nullptr};
+  EPIC::Epic* epic_{nullptr};  //NOT owning
   std::unique_ptr<epic::ProcessInterface> epic_proc_{nullptr};
   std::vector<double> coords_;
+  std::shared_ptr<EPIC::MonteCarloScenario> scenario_{nullptr};
 };
 REGISTER_PROCESS("epic", EpICProcess);

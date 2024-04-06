@@ -19,6 +19,9 @@
 #ifndef CepGenEpIC_ProcessInterface_h
 #define CepGenEpIC_ProcessInterface_h
 
+#include <automation/MonteCarloTask.h>
+#include <services/GeneratorService.h>
+
 #include <memory>
 
 namespace cepgen {
@@ -31,18 +34,48 @@ namespace cepgen {
 
     protected:
     };
-    /// Interface to an EpIC generator service
-    /// \tparam T process-specific EpIC generator service object
-    template <typename T>
-    class ServiceInterface : public ProcessInterface, public std::shared_ptr<T> {
+    template <class Kr, class P, class Km, class R>
+    class GeneratorServiceInterface : public EPIC::GeneratorService<Kr, P, Km, R> {
     public:
-      explicit ServiceInterface(T* service, std::shared_ptr<EPIC::MonteCarloScenario>& scenario)
-          : std::shared_ptr<T>(service) {
-        (*this)->setScenarioDescription(scenario->getDescription());
-        (*this)->setScenarioDate(scenario->getDate());
-      }
+      using EGS = EPIC::GeneratorService<Kr, P, Km, R>;
 
-      double weight(std::vector<double>& coords) const override { return (*this)->getEventDistribution(coords); }
+      explicit GeneratorServiceInterface(const EGS& service) : EGS(service) {}
+
+      void initialise(const EPIC::MonteCarloTask& task) {
+        CG_WARNING("") << 1;
+        EGS::getGeneralConfigurationFromTask(task);
+        CG_WARNING("") << 2;
+        EGS::getAdditionalGeneralConfigurationFromTask(task);
+        EGS::getExperimentalConditionsFromTask(task);
+        EGS::getKinematicRangesFromTask(task);
+        EGS::getProcessModuleFromTask(task);
+        EGS::getEventGeneratorModuleFromTask(task);
+        EGS::getKinematicModuleFromTask(task);
+        EGS::getRCModuleFromTask(task);
+        //EGS::getWriterModuleFromTask(task);
+      }
+    };
+    /// Interface to an EpIC generator service
+    template <class Kr, class P, class Km, class R>
+    class ServiceInterface : public ProcessInterface {
+    public:
+      using EGS = EPIC::GeneratorService<Kr, P, Km, R>;
+      using GSI = GeneratorServiceInterface<Kr, P, Km, R>;
+
+      explicit ServiceInterface(EGS* service,
+                                //const std::shared_ptr<EPIC::MonteCarloScenario>& scenario,
+                                const EPIC::MonteCarloScenario& scenario,
+                                const EPIC::MonteCarloTask& task)
+          : service_(service) {
+        service_->setScenarioDescription(scenario.getDescription());
+        service_->setScenarioDate(scenario.getDate());
+        interface()->initialise(task);
+      }
+      double weight(std::vector<double>& coords) const override { return service_->getEventDistribution(coords); }
+
+    private:
+      EGS* service_;
+      GSI* interface() { return dynamic_cast<GSI*>(service_); }
     };
   }  // namespace epic
 }  // namespace cepgen
