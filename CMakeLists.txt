@@ -11,6 +11,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 find_package(CepGen REQUIRED)
 find_path(EPIC_SOURCES_DIR NAMES Epic.cpp HINTS ${EPIC_DIRS} PATH_SUFFIXES src)
+find_path(EPIC_DATA_DIR NAMES version.txt HINTS ${EPIC_DIRS} PATH_SUFFIXES data)
 find_path(EPIC_INCLUDE NAMES Epic.h HINTS ${EPIC_DIRS} PATH_SUFFIXES include)
 if(NOT EPIC_SOURCES_DIR OR NOT EPIC_INCLUDE)
   return()
@@ -46,6 +47,10 @@ file(GLOB_RECURSE epic_sources ${EPIC_SOURCES_DIR}/*.cpp)
 #----- copy the configuration files
 configure_file(data/partons.properties.in ${CMAKE_CURRENT_BINARY_DIR}/data/partons.properties @ONLY)
 configure_file(data/logger.properties.in ${CMAKE_CURRENT_BINARY_DIR}/data/logger.properties @ONLY)
+file(GLOB_RECURSE epic_data_files RELATIVE ${EPIC_DATA_DIR} ${EPIC_DATA_DIR}/*)
+foreach(_f ${epic_data_files})
+  configure_file(${EPIC_DATA_DIR}/${_f} ${CMAKE_CURRENT_BINARY_DIR}/data/${_f} COPYONLY)
+endforeach()
 
 #----- build the object
 add_library(CepGenEpIC SHARED ${cepgen_epic_sources} ${epic_sources})

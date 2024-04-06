@@ -88,24 +88,27 @@ private:
     epic_ = EPIC::Epic::getInstance();
     epic_->init(args.size(), args.data());
     epic_->getRandomSeedManager()->setSeedCount(seed_);
-    scenario_ = EPIC::AutomationService::getInstance()->parseXMLFile(scenario_file_);
-    for (auto& it : scenario_->getTasks()) {
-      const auto& name = it.getServiceName();
+    auto parsed_scenario = EPIC::AutomationService::getInstance()->parseXMLFile(scenario_file_);
+    for (const auto& parsed_task : parsed_scenario->getTasks()) {
+      auto task = EPIC::MonteCarloTask(parsed_task);  // copy to edit
+      //task.setWriterConfiguration(PARTONS::BaseObjectData{});
+      scenario_.addTask(task);
+      const auto& name = task.getServiceName();
       if (name == "DVCSGeneratorService")
         epic_proc_.reset(new epic::ProcessServiceInterface(
-            epic_->getServiceObjectRegistry()->getDVCSGeneratorService(), *scenario_, it));
+            epic_->getServiceObjectRegistry()->getDVCSGeneratorService(), scenario_, task));
       else if (name == "TCSGeneratorService")
         epic_proc_.reset(new epic::ProcessServiceInterface(
-            epic_->getServiceObjectRegistry()->getTCSGeneratorService(), *scenario_, it));
+            epic_->getServiceObjectRegistry()->getTCSGeneratorService(), scenario_, task));
       else if (name == "DVMPGeneratorService")
         epic_proc_.reset(new epic::ProcessServiceInterface(
-            epic_->getServiceObjectRegistry()->getDVMPGeneratorService(), *scenario_, it));
+            epic_->getServiceObjectRegistry()->getDVMPGeneratorService(), scenario_, task));
       else if (name == "GAM2GeneratorService")
         epic_proc_.reset(new epic::ProcessServiceInterface(
-            epic_->getServiceObjectRegistry()->getGAM2GeneratorService(), *scenario_, it));
+            epic_->getServiceObjectRegistry()->getGAM2GeneratorService(), scenario_, task));
       else if (name == "DDVCSGeneratorService")
         epic_proc_.reset(new epic::ProcessServiceInterface(
-            epic_->getServiceObjectRegistry()->getDDVCSGeneratorService(), *scenario_, it));
+            epic_->getServiceObjectRegistry()->getDDVCSGeneratorService(), scenario_, task));
       CG_INFO("EpICProcess:prepareKinematics") << "New '" << name << "' task built.";
     }
     coords_.clear();
@@ -146,6 +149,6 @@ private:
   EPIC::Epic* epic_{nullptr};  //NOT owning
   std::unique_ptr<epic::ProcessInterface> epic_proc_{nullptr};
   std::vector<double> coords_;
-  std::shared_ptr<EPIC::MonteCarloScenario> scenario_{nullptr};
+  EPIC::MonteCarloScenario scenario_;
 };
 REGISTER_PROCESS("epic", EpICProcess);
