@@ -23,7 +23,6 @@
 #include <CepGen/Process/Process.h>
 #include <CepGen/Utils/Filesystem.h>
 #include <CepGen/Utils/String.h>
-#include <QtCore/qcoreapplication.h>
 
 #include <cstring>
 
@@ -48,22 +47,11 @@
 using namespace cepgen;
 using namespace std::string_literals;
 
-static std::unique_ptr<QCoreApplication> kQtApp{nullptr};
-
 /// Interface object to an EpIC process
 class EpICProcess final : public cepgen::proc::Process {
 public:
   explicit EpICProcess(const ParametersList& params)
-      : cepgen::proc::Process(params), seed_(steer<unsigned long long>("seed")) {
-    try {  // initialise Partons/EpIC with an argc/argv pair
-      auto args = parseArguments();
-      int argc = args.size();
-      if (!kQtApp)
-        kQtApp.reset(new QCoreApplication(argc, args.data()));
-    } catch (const ElemUtils::CustomException& exc) {
-      throw CG_FATAL("EpICProcess") << "Fatal EpIC/Partons exception: " << exc.what();
-    }
-  }
+      : cepgen::proc::Process(params), seed_(steer<unsigned long long>("seed")) {}
   EpICProcess(const EpICProcess& oth) : EpICProcess(oth.parameters()) {}
 
   ~EpICProcess() {
@@ -89,27 +77,26 @@ private:
     epic_ = EPIC::Epic::getInstance();
     epic_->init(args.size(), args.data());
     epic_->getRandomSeedManager()->setSeedCount(seed_);
-    scenario_ = cepgen::epic::parseScenario(params_);
-    for (auto& task : scenario_.getTasks()) {
+    const auto scenario = cepgen::epic::parseScenario(params_);
+    for (auto& task : scenario.getTasks()) {
       const auto& name = task.getServiceName();
       if (name == "DVCSGeneratorService")
         epic_proc_.reset(new epic::ProcessServiceInterface(
-            epic_->getServiceObjectRegistry()->getDVCSGeneratorService(), scenario_, task));
+            epic_->getServiceObjectRegistry()->getDVCSGeneratorService(), scenario, task));
       else if (name == "TCSGeneratorService")
         epic_proc_.reset(new epic::ProcessServiceInterface(
-            epic_->getServiceObjectRegistry()->getTCSGeneratorService(), scenario_, task));
+            epic_->getServiceObjectRegistry()->getTCSGeneratorService(), scenario, task));
       else if (name == "DVMPGeneratorService")
         epic_proc_.reset(new epic::ProcessServiceInterface(
-            epic_->getServiceObjectRegistry()->getDVMPGeneratorService(), scenario_, task));
+            epic_->getServiceObjectRegistry()->getDVMPGeneratorService(), scenario, task));
       else if (name == "GAM2GeneratorService")
         epic_proc_.reset(new epic::ProcessServiceInterface(
-            epic_->getServiceObjectRegistry()->getGAM2GeneratorService(), scenario_, task));
+            epic_->getServiceObjectRegistry()->getGAM2GeneratorService(), scenario, task));
       else if (name == "DDVCSGeneratorService")
         epic_proc_.reset(new epic::ProcessServiceInterface(
-            epic_->getServiceObjectRegistry()->getDDVCSGeneratorService(), scenario_, task));
+            epic_->getServiceObjectRegistry()->getDDVCSGeneratorService(), scenario, task));
       CG_INFO("EpICProcess:prepareKinematics") << "New '" << name << "' task built.";
     }
-    coords_.clear();
     coords_.resize(epic_proc_->ndim());
     for (size_t i = 0; i < epic_proc_->ndim(); ++i)
       defineVariable(coords_.at(i), Mapping::linear, epic_proc_->ranges().at(i), utils::format("x_%zu", i));
@@ -144,6 +131,5 @@ private:
   EPIC::Epic* epic_{nullptr};  //NOT owning
   std::unique_ptr<epic::ProcessInterface> epic_proc_{nullptr};
   std::vector<double> coords_;
-  EPIC::MonteCarloScenario scenario_;
 };
 REGISTER_PROCESS("epic", EpICProcess);
