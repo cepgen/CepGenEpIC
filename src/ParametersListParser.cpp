@@ -75,10 +75,10 @@ namespace cepgen {
         obj.setModuleClassName(params.name());
       if (const auto modules = params.keysOf<ParametersList>(); !modules.empty()) {  // list of submodules
         PARTONS::BaseObjectData mod;
-        for (const auto& key : modules) {
-          const auto mod_params = params.get<ParametersList>(key);
-          mod = obj.addSubModule(key, mod_params.name());
-          mod.setModuleType(key);
+        for (const auto& mod_key : modules) {
+          const auto mod_params = params.get<ParametersList>(mod_key);
+          mod = obj.addSubModule(mod_key, mod_params.name());
+          mod.setModuleType(mod_key);
           parseParameters(mod_params, mod);
         }
         return mod;

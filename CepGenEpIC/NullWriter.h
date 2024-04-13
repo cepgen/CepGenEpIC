@@ -1,0 +1,48 @@
+/*
+ *  CepGen: a central exclusive processes event generator
+ *  Copyright (C) 2024  Laurent Forthomme
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#ifndef CepGenEpIC_NullWriter_h
+#define CepGenEpIC_NullWriter_h
+
+#include <CepGen/Core/Exception.h>
+#include <modules/writer/WriterModule.h>
+
+#include <memory>
+
+namespace cepgen {
+  namespace epic {
+    class NullWriter : public EPIC::WriterModule {
+    public:
+      using EPIC::WriterModule::WriterModule;
+      explicit NullWriter(const std::string& name = "NullWriter");
+      NullWriter(const NullWriter&);
+      virtual ~NullWriter() = default;
+
+      static const unsigned int classId;
+      NullWriter* clone() const override;
+
+      void open() override {}
+      void saveGenerationInformation(const EPIC::GenerationInformation&) override {}
+      void close() override {}
+      void write(const EPIC::Event&) override {}
+      void write(const std::vector<EPIC::Event>&) override {}
+    };
+  }  // namespace epic
+}  // namespace cepgen
+
+#endif
