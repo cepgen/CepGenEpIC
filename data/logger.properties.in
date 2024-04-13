@@ -12,7 +12,7 @@ enable = true
 # WARN   - print warnings and errors only
 # INFO   - print info, warnings and errors only
 # DEBUG  - print all, i.e.: debug, info, warnings and errors
-default.level = INFO
+default.level = WARN
 
 # Logger output policy may be also set locally, i.e. for a single PARTONS module. E.g.
 # logger.DVCSCFFHeavyQuarkModel = DEBUG

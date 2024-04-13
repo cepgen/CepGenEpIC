@@ -15,22 +15,6 @@ environment.configuration.file.path = @PARTONS_DIR@/data/config/environment_conf
 xml.schema.file.path = @EPIC_DIRS@/data/xmlSchema.partons.xsd
 xml.schema.epic.file.path = @EPIC_DIRS@/data/xmlSchema.epic.xsd
 
-# DATABASE #
-
-# Database connection definition (for more information see our tutorial explaining the database usage)
-database.production.type = MYSQL
-database.production.url = localhost
-database.production.port = 3306
-database.production.dbname = partons
-database.production.user =  partons
-database.production.passwd = partons
-
-# Whether to use temporary file transaction to load data
-database.load.infile.use = false
-
-# Temporary working directory needed by the transaction mechanism (if database.load.infile.use is true)
-database.load.infile.directory = partons/tmp
-
 # THREAD #
 
 # Number of available processors to be used by threads
