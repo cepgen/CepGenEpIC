@@ -30,12 +30,9 @@ namespace cepgen {
     class ProcessInterface {
     public:
       ProcessInterface() {}
-
       virtual const std::vector<Limits> ranges() const = 0;
       virtual size_t ndim() const = 0;
       virtual double weight(std::vector<double>&) const = 0;
-
-    protected:
     };
 
     /// Interface to an EpIC generator service
@@ -55,13 +52,15 @@ namespace cepgen {
         for (const auto& range : service_->getKinematicModule()->getKinematicRanges(
                  service_->getExperimentalConditions(), service_->getKinematicRanges()))
           ranges_.emplace_back(Limits{range.getMin(), range.getMax()});
+        CG_INFO("ProcessServiceInterface")
+            << "Process service interface initialised for dimension-" << ndim() << " '" << service_->getClassName()
+            << "' process.\n\tKinematic ranges: " << ranges_ << ".";
       }
       const std::vector<Limits> ranges() const override { return ranges_; }
       size_t ndim() const override { return ranges_.size(); }
       double weight(std::vector<double>& coords) const override {
         CG_ASSERT(service_);
-        const auto weight = service_->getEventDistribution(coords);
-        return weight;
+        return service_->getEventDistribution(coords);
       }
 
     private:
