@@ -49,6 +49,8 @@ namespace cepgen {
         service_->setScenarioDescription(scenario.getDescription());
         service_->setScenarioDate(scenario.getDate());
         service_->computeTask(task);
+        if (!service_->getKinematicModule()->runTest())
+          CG_WARNING("ProcessServiceInterface") << "Kinematic module test failed.";
         for (const auto& range : service_->getKinematicModule()->getKinematicRanges(
                  service_->getExperimentalConditions(), service_->getKinematicRanges()))
           ranges_.emplace_back(Limits{range.getMin(), range.getMax()});
