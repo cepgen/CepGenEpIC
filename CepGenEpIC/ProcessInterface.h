@@ -20,11 +20,10 @@
 #define CepGenEpIC_ProcessInterface_h
 
 #include <CepGen/Core/Exception.h>
+#include <CepGen/Utils/Limits.h>
 #include <automation/MonteCarloTask.h>
-#include <partons/BaseObjectRegistry.h>
-#include <services/GeneratorService.h>
 
-#include <memory>
+#include <vector>
 
 namespace cepgen {
   namespace epic {
@@ -32,22 +31,11 @@ namespace cepgen {
     public:
       ProcessInterface() {}
 
+      virtual const std::vector<Limits> ranges() const = 0;
+      virtual size_t ndim() const = 0;
       virtual double weight(std::vector<double>&) const = 0;
 
     protected:
-    };
-
-    class NullEventGenerator : public EPIC::EventGeneratorModule {
-    public:
-      using EPIC::EventGeneratorModule::EventGeneratorModule;
-      static const unsigned int classId;
-      explicit NullEventGenerator(const std::string& name = "NullEventGenerator") : EventGeneratorModule(name) {}
-      void initialise(const std::vector<EPIC::KinematicRange>&, const EPIC::EventGeneratorInterface&) override {}
-      std::pair<std::vector<double>, double> generateEvent() override {
-        return std::make_pair(std::vector<double>{}, 0.);
-      }
-      std::pair<double, double> getIntegral() override { return std::make_pair(0., 0.); }
-      PARTONS::ModuleObject* clone() const override { return nullptr; }
     };
 
     /// Interface to an EpIC generator service
@@ -63,16 +51,22 @@ namespace cepgen {
               << "Failed to interface the EPIC generator service to build a CepGen-compatible process definition.";
         service_->setScenarioDescription(scenario.getDescription());
         service_->setScenarioDate(scenario.getDate());
-        //service_->initialise(task);
         service_->computeTask(task);
+        for (const auto& range : service_->getKinematicModule()->getKinematicRanges(
+                 service_->getExperimentalConditions(), service_->getKinematicRanges()))
+          ranges_.emplace_back(Limits{range.getMin(), range.getMax()});
       }
+      const std::vector<Limits> ranges() const override { return ranges_; }
+      size_t ndim() const override { return ranges_.size(); }
       double weight(std::vector<double>& coords) const override {
         CG_ASSERT(service_);
-        return service_->getEventDistribution(coords);
+        const auto weight = service_->getEventDistribution(coords);
+        return weight;
       }
 
     private:
       T* service_{nullptr};
+      std::vector<Limits> ranges_;
     };
   }  // namespace epic
 }  // namespace cepgen

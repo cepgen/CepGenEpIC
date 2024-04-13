@@ -110,10 +110,9 @@ private:
       CG_INFO("EpICProcess:prepareKinematics") << "New '" << name << "' task built.";
     }
     coords_.clear();
-    for (size_t i = 0; i < 20; ++i) {
-      auto& coord = coords_.emplace_back();
-      defineVariable(coord, Mapping::linear, {0., 1.}, utils::format("x_%zu", i));
-    }
+    coords_.resize(epic_proc_->ndim());
+    for (size_t i = 0; i < epic_proc_->ndim(); ++i)
+      defineVariable(coords_.at(i), Mapping::linear, epic_proc_->ranges().at(i), utils::format("x_%zu", i));
     CG_DEBUG("EpICProcess:prepareKinematics") << "Phase space mapped for dim-" << coords_.size() << " integrand.";
   }
   void addEventContent() override {
