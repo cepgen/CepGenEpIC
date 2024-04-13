@@ -21,6 +21,7 @@
 
 #include <CepGen/Core/Exception.h>
 #include <automation/MonteCarloTask.h>
+#include <partons/BaseObjectRegistry.h>
 #include <services/GeneratorService.h>
 
 #include <memory>
@@ -35,33 +36,28 @@ namespace cepgen {
 
     protected:
     };
-    template <typename T>
-    class GeneratorServiceInterface : public T {
-    public:
-      using T::T;
 
-      void initialise(const EPIC::MonteCarloTask& task) {
-        T::getGeneralConfigurationFromTask(task);
-        T::getAdditionalGeneralConfigurationFromTask(task);
-        T::getExperimentalConditionsFromTask(task);
-        T::getKinematicRangesFromTask(task);
-        T::getProcessModuleFromTask(task);
-        T::getEventGeneratorModuleFromTask(task);
-        T::getKinematicModuleFromTask(task);
-        T::getRCModuleFromTask(task);
-        //T::getWriterModuleFromTask(task);
+    class NullEventGenerator : public EPIC::EventGeneratorModule {
+    public:
+      using EPIC::EventGeneratorModule::EventGeneratorModule;
+      static const unsigned int classId;
+      explicit NullEventGenerator(const std::string& name = "NullEventGenerator") : EventGeneratorModule(name) {}
+      void initialise(const std::vector<EPIC::KinematicRange>&, const EPIC::EventGeneratorInterface&) override {}
+      std::pair<std::vector<double>, double> generateEvent() override {
+        return std::make_pair(std::vector<double>{}, 0.);
       }
+      std::pair<double, double> getIntegral() override { return std::make_pair(0., 0.); }
+      PARTONS::ModuleObject* clone() const override { return nullptr; }
     };
+
     /// Interface to an EpIC generator service
     template <typename T>
     class ProcessServiceInterface : public ProcessInterface {
     public:
-      using GSI = GeneratorServiceInterface<T>;
-
       explicit ProcessServiceInterface(T* service,
                                        const EPIC::MonteCarloScenario& scenario,
                                        const EPIC::MonteCarloTask& task)
-          : service_(reinterpret_cast<GSI*>(service)) {
+          : service_(service) {
         if (!service_)
           throw CG_FATAL("ProcessServiceInterface")
               << "Failed to interface the EPIC generator service to build a CepGen-compatible process definition.";
@@ -76,7 +72,7 @@ namespace cepgen {
       }
 
     private:
-      GSI* service_{nullptr};
+      T* service_{nullptr};
     };
   }  // namespace epic
 }  // namespace cepgen

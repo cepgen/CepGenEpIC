@@ -42,6 +42,7 @@
 #include <services/GAM2GeneratorService.h>
 #include <services/TCSGeneratorService.h>
 
+#include "CepGenEpIC/ParametersListParser.h"
 #include "CepGenEpIC/ProcessInterface.h"
 
 using namespace cepgen;
@@ -53,7 +54,7 @@ static std::unique_ptr<QCoreApplication> kQtApp{nullptr};
 class EpICProcess final : public cepgen::proc::Process {
 public:
   explicit EpICProcess(const ParametersList& params)
-      : cepgen::proc::Process(params), seed_(steer<unsigned long long>("seed")), scenario_file_(steerPath("scenario")) {
+      : cepgen::proc::Process(params), seed_(steer<unsigned long long>("seed")) {
     try {  // initialise Partons/EpIC with an argc/argv pair
       auto args = parseArguments();
       int argc = args.size();
@@ -88,11 +89,8 @@ private:
     epic_ = EPIC::Epic::getInstance();
     epic_->init(args.size(), args.data());
     epic_->getRandomSeedManager()->setSeedCount(seed_);
-    auto parsed_scenario = EPIC::AutomationService::getInstance()->parseXMLFile(scenario_file_);
-    for (const auto& parsed_task : parsed_scenario->getTasks()) {
-      auto task = EPIC::MonteCarloTask(parsed_task);  // copy to edit
-      //task.setWriterConfiguration(PARTONS::BaseObjectData{});
-      scenario_.addTask(task);
+    scenario_ = cepgen::epic::parseScenario(params_);
+    for (auto& task : scenario_.getTasks()) {
       const auto& name = task.getServiceName();
       if (name == "DVCSGeneratorService")
         epic_proc_.reset(new epic::ProcessServiceInterface(
@@ -131,9 +129,8 @@ private:
   void fillKinematics() override {}
 
   std::vector<char*> parseArguments() const {
-    const auto args = std::vector<std::string>{fs::current_path() / "data" / "partons.properties",
-                                               utils::format("--seed=%zu", seed_),
-                                               "--scenario=" + scenario_file_};
+    const auto args = std::vector<std::string>{
+        fs::current_path() / "data" / "partons.properties", utils::format("--seed=%zu", seed_), "--scenario=''"};
     CG_DEBUG("EpICProcess:parseArguments") << "List of arguments handled:\n\t" << args << ".";
     std::vector<char*> argv;
     std::transform(args.begin(), args.end(), std::back_inserter(argv), [](const std::string& str) -> char* {
@@ -145,7 +142,6 @@ private:
   }
 
   const unsigned long long seed_;
-  const std::string scenario_file_;
   EPIC::Epic* epic_{nullptr};  //NOT owning
   std::unique_ptr<epic::ProcessInterface> epic_proc_{nullptr};
   std::vector<double> coords_;
