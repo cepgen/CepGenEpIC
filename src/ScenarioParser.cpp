@@ -72,16 +72,21 @@ namespace cepgen {
     }
 
     PARTONS::BaseObjectData ScenarioParser::parseParameters(const ParametersList& params,
-                                                            PARTONS::BaseObjectData& obj) {
+                                                            PARTONS::BaseObjectData& obj,
+                                                            bool first) {
       if (params.hasName())  // steering a module
         obj.setModuleClassName(params.name());
       if (const auto modules = params.keysOf<ParametersList>(); !modules.empty()) {  // list of submodules
-        PARTONS::BaseObjectData mod;
+        auto mod = obj;
         for (const auto& mod_key : modules) {
           const auto mod_params = params.get<ParametersList>(mod_key);
-          mod = obj.addSubModule(mod_key, mod_params.name());
-          mod.setModuleType(mod_key);
-          parseParameters(mod_params, mod);
+          if (first) {
+            PARTONS::BaseObjectData mod;
+            mod.setModuleClassName(params.name());
+            mod.setModuleType(mod_key);
+            return parseParameters(mod_params, mod, false);
+          }
+          parseParameters(mod_params, mod.addSubModule(mod_key, mod_params.name()), false);
         }
         return mod;
       }

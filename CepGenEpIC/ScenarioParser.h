@@ -33,7 +33,7 @@ namespace cepgen {
 
     private:
       EPIC::MonteCarloTask parseTask(const ParametersList&);
-      PARTONS::BaseObjectData parseParameters(const ParametersList&, PARTONS::BaseObjectData&);
+      PARTONS::BaseObjectData parseParameters(const ParametersList&, PARTONS::BaseObjectData&, bool first = true);
     };
   }  // namespace epic
 }  // namespace cepgen
