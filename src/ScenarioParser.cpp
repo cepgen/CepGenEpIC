@@ -18,26 +18,27 @@
 
 #include <CepGen/Utils/Message.h>
 
-#include "CepGenEpIC/ParametersListParser.h"
+#include "CepGenEpIC/ScenarioParser.h"
+
+using namespace std::string_literals;
 
 namespace cepgen {
   namespace epic {
-    EPIC::MonteCarloScenario parseScenario(const ParametersList& params) {
-      EPIC::MonteCarloScenario scenario;
-      if (params.has<std::string>("date"))
-        scenario.setDate(params.get<std::string>("date"));
-      if (params.has<std::string>("description"))
-        scenario.setDescription(params.get<std::string>("description"));
+    ScenarioParser::ScenarioParser(const ParametersList& params) : SteeredObject(params) {
+      if (const auto date = params.get<std::string>("date"); !date.empty())
+        setDate(date);
+      if (const auto description = params.get<std::string>("description"); !description.empty())
+        setDescription(description);
       for (const auto& plist_task : params.get<std::vector<ParametersList> >("tasks"))
-        scenario.addTask(parseTask(plist_task));
-      CG_INFO("epic:parseScenario").log([&scenario](auto& log) {
+        addTask(parseTask(plist_task));
+      CG_INFO("epic:ScenarioParser").log([this](auto& log) {
         const auto sep1 = std::string(70, '=') + "\n", sep2 = std::string(70, '-') + "\n";
         log << "Dump of scenario parsed from CepGen configuration\n"
-            << "Date: " << scenario.getDate() << "\n"
-            << "Description: " << scenario.getDescription() << "\n"
+            << "Date: " << getDate() << "\n"
+            << "Description: " << getDescription() << "\n"
             << "Tasks:\n";
         size_t i = 0;
-        for (const auto& task : scenario.getTasks())
+        for (const auto& task : getTasks())
           log << sep1 << "Task #" << ++i << "\n"
               << "Service name: " << task.getServiceName() << "\n"
               << "Method name: " << task.getMethodName() << "\n"
@@ -51,10 +52,9 @@ namespace cepgen {
               << sep2 << task.getRCConfiguration().toString() << "Writer configuration\n"
               << sep2 << task.getWriterConfiguration().toString();
       });
-      return scenario;
     }
 
-    EPIC::MonteCarloTask parseTask(const ParametersList& params) {
+    EPIC::MonteCarloTask ScenarioParser::parseTask(const ParametersList& params) {
       EPIC::MonteCarloTask task;
       task.setServiceName(params.name());
       task.setMethodName(params.get<std::string>("method"));
@@ -70,7 +70,8 @@ namespace cepgen {
       return task;
     }
 
-    PARTONS::BaseObjectData parseParameters(const ParametersList& params, PARTONS::BaseObjectData& obj) {
+    PARTONS::BaseObjectData ScenarioParser::parseParameters(const ParametersList& params,
+                                                            PARTONS::BaseObjectData& obj) {
       if (params.hasName())  // steering a module
         obj.setModuleClassName(params.name());
       if (const auto modules = params.keysOf<ParametersList>(); !modules.empty()) {  // list of submodules
@@ -92,6 +93,14 @@ namespace cepgen {
       for (const auto& key : params.keysOf<double>())
         obj.addParameter(ElemUtils::Parameter(key, params.get<double>(key)));
       return obj;
+    }
+
+    ParametersDescription ScenarioParser::description() {
+      auto desc = ParametersDescription();
+      desc.setDescription("A scenario parser for CepGen parameters list");
+      desc.add("date", ""s).setDescription("scenario creation date");
+      desc.add("description", ""s).setDescription("scenario description");
+      return desc;
     }
   }  // namespace epic
 }  // namespace cepgen

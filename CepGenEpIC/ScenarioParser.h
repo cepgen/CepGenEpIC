@@ -16,18 +16,25 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CepGenEpIC_ParametersListParser_h
-#define CepGenEpIC_ParametersListParser_h
+#ifndef CepGenEpIC_ScenarioParser_h
+#define CepGenEpIC_ScenarioParser_h
 
-#include <CepGen/Core/ParametersList.h>
+#include <CepGen/Core/SteeredObject.h>
 #include <automation/MonteCarloScenario.h>
 #include <partons/beans/automation/BaseObjectData.h>
 
 namespace cepgen {
   namespace epic {
-    EPIC::MonteCarloScenario parseScenario(const ParametersList&);
-    EPIC::MonteCarloTask parseTask(const ParametersList&);
-    PARTONS::BaseObjectData parseParameters(const ParametersList&, PARTONS::BaseObjectData&);
+    class ScenarioParser : public SteeredObject<ScenarioParser>, public EPIC::MonteCarloScenario {
+    public:
+      explicit ScenarioParser(const ParametersList&);
+
+      static ParametersDescription description();
+
+    private:
+      EPIC::MonteCarloTask parseTask(const ParametersList&);
+      PARTONS::BaseObjectData parseParameters(const ParametersList&, PARTONS::BaseObjectData&);
+    };
   }  // namespace epic
 }  // namespace cepgen
 

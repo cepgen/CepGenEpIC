@@ -41,8 +41,8 @@
 #include <services/GAM2GeneratorService.h>
 #include <services/TCSGeneratorService.h>
 
-#include "CepGenEpIC/ParametersListParser.h"
 #include "CepGenEpIC/ProcessInterface.h"
+#include "CepGenEpIC/ScenarioParser.h"
 
 using namespace cepgen;
 using namespace std::string_literals;
@@ -64,7 +64,7 @@ public:
   static ParametersDescription description() {
     auto desc = cepgen::proc::Process::description();
     desc.setDescription("EpIC process");
-    desc.add("scenario", ""s).setDescription("path to xml scenario");
+    desc += cepgen::epic::ScenarioParser::description();
     desc.add("seed", 42ull).setDescription("initial random seed");
     desc.add("process", ""s).setDescription("type of process to consider");
     return desc;
@@ -77,7 +77,7 @@ private:
     epic_ = EPIC::Epic::getInstance();
     epic_->init(args.size(), args.data());
     epic_->getRandomSeedManager()->setSeedCount(seed_);
-    const auto scenario = cepgen::epic::parseScenario(params_);
+    const auto scenario = cepgen::epic::ScenarioParser(params_);
     for (auto& task : scenario.getTasks()) {
       const auto& name = task.getServiceName();
       if (name == "DVCSGeneratorService")
