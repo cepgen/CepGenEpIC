@@ -17,6 +17,7 @@
  */
 
 #include <CepGen/Utils/Message.h>
+#include <CepGen/Utils/String.h>
 
 #include "CepGenEpIC/ScenarioParser.h"
 
@@ -92,6 +93,12 @@ namespace cepgen {
         obj.addParameter(ElemUtils::Parameter(key, params.get<int>(key)));
       for (const auto& key : params.keysOf<double>())
         obj.addParameter(ElemUtils::Parameter(key, params.get<double>(key)));
+      for (const auto& key : params.keysOf<Limits>()) {
+        const auto lim = params.get<Limits>(key);
+        obj.addParameter(ElemUtils::Parameter(key, std::to_string(lim.min()) + "|" + std::to_string(lim.max())));
+      }
+      for (const auto& key : params.keysOf<std::vector<double> >())
+        obj.addParameter(ElemUtils::Parameter(key, utils::merge(params.get<std::vector<double> >(key), "|")));
       return obj;
     }
 
@@ -100,6 +107,22 @@ namespace cepgen {
       desc.setDescription("A scenario parser for CepGen parameters list");
       desc.add("date", ""s).setDescription("scenario creation date");
       desc.add("description", ""s).setDescription("scenario description");
+
+      auto task_desc = ParametersDescription();
+      task_desc.setDescription("EpIC/PARTONS task parameters");
+      task_desc.add("general_configuration", ParametersDescription());
+      task_desc.add("kinematic_range", ParametersDescription());
+      task_desc.add("experimental_conditions", ParametersDescription());
+      task_desc.add("computation_configuration", ParametersDescription());
+      auto gen_desc = ParametersDescription();
+      gen_desc.add("EventGeneratorModule", ParametersDescription().setName("NullEventGenerator"));
+      task_desc.add("generator_configuration", gen_desc);
+      task_desc.add("kinematic_configuration", ParametersDescription());
+      task_desc.add("rc_configuration", ParametersDescription());
+      auto writer_desc = ParametersDescription();
+      writer_desc.add("WriterModule", ParametersDescription().setName("NullWriter"));
+      task_desc.add("writer_configuration", writer_desc);
+      desc.addParametersDescriptionVector("tasks", task_desc, {ParametersList()});
       return desc;
     }
   }  // namespace epic
