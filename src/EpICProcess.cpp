@@ -82,19 +82,42 @@ private:
       const auto& name = task.getServiceName();
       if (name == "DVCSGeneratorService")
         epic_proc_.reset(new epic::ProcessServiceInterface(
-            epic_->getServiceObjectRegistry()->getDVCSGeneratorService(), scenario, task));
+            epic_->getServiceObjectRegistry()->getDVCSGeneratorService(), scenario, task, [](auto& ranges) {
+              ranges.at(0).setMinMax(log(ranges.at(0).getMin()), log(ranges.at(0).getMax()));
+              ranges.at(1).setMinMax(log(ranges.at(1).getMin()), log(ranges.at(1).getMax()));
+              ranges.at(2).setMinMax(log(-1 * ranges.at(2).getMax()), log(-1 * ranges.at(2).getMin()));
+            }));
       else if (name == "TCSGeneratorService")
         epic_proc_.reset(new epic::ProcessServiceInterface(
-            epic_->getServiceObjectRegistry()->getTCSGeneratorService(), scenario, task));
+            epic_->getServiceObjectRegistry()->getTCSGeneratorService(), scenario, task, [](auto& ranges) {
+              ranges.at(0).setMinMax(log(-1 * ranges.at(0).getMax()), log(-1 * ranges.at(0).getMin()));
+              ranges.at(1).setMinMax(log(ranges.at(1).getMin()), log(ranges.at(1).getMax()));
+              ranges.at(5).setMinMax(log(ranges.at(5).getMin()), log(ranges.at(5).getMax()));
+              ranges.at(6).setMinMax(log(ranges.at(6).getMin()), log(ranges.at(6).getMax()));
+            }));
       else if (name == "DVMPGeneratorService")
         epic_proc_.reset(new epic::ProcessServiceInterface(
-            epic_->getServiceObjectRegistry()->getDVMPGeneratorService(), scenario, task));
+            epic_->getServiceObjectRegistry()->getDVMPGeneratorService(), scenario, task, [](auto& ranges) {
+              ranges.at(0).setMinMax(log(ranges.at(0).getMin()), log(ranges.at(0).getMax()));
+              ranges.at(1).setMinMax(log(ranges.at(1).getMin()), log(ranges.at(1).getMax()));
+              ranges.at(2).setMinMax(log(-1 * ranges.at(2).getMax()), log(-1 * ranges.at(2).getMin()));
+            }));
       else if (name == "GAM2GeneratorService")
         epic_proc_.reset(new epic::ProcessServiceInterface(
-            epic_->getServiceObjectRegistry()->getGAM2GeneratorService(), scenario, task));
+            epic_->getServiceObjectRegistry()->getGAM2GeneratorService(), scenario, task, [](auto& ranges) {
+              ranges.at(0).setMinMax(log(-1 * ranges.at(0).getMax()), log(-1 * ranges.at(0).getMin()));
+              ranges.at(2).setMinMax(log(ranges.at(2).getMin()), log(ranges.at(2).getMax()));
+              ranges.at(4).setMinMax(log(ranges.at(4).getMin()), log(ranges.at(4).getMax()));
+              ranges.at(5).setMinMax(log(ranges.at(5).getMin()), log(ranges.at(5).getMax()));
+            }));
       else if (name == "DDVCSGeneratorService")
         epic_proc_.reset(new epic::ProcessServiceInterface(
-            epic_->getServiceObjectRegistry()->getDDVCSGeneratorService(), scenario, task));
+            epic_->getServiceObjectRegistry()->getDDVCSGeneratorService(), scenario, task, [](auto& ranges) {
+              ranges.at(0).setMinMax(log(ranges.at(0).getMin()), log(ranges.at(0).getMax()));
+              ranges.at(1).setMinMax(log(ranges.at(1).getMin()), log(ranges.at(1).getMax()));
+              ranges.at(2).setMinMax(log(-1 * ranges.at(2).getMax()), log(-1 * ranges.at(2).getMin()));
+              ranges.at(3).setMinMax(log(ranges.at(3).getMin()), log(ranges.at(3).getMax()));
+            }));
       CG_INFO("EpICProcess:prepareKinematics") << "New '" << name << "' task built.";
     }
     coords_.resize(epic_proc_->ndim());
@@ -111,7 +134,7 @@ private:
                                     {Particle::OutgoingBeam2, {PDG::proton}},
                                     {Particle::CentralSystem, {PDG::muon, PDG::muon}}});
   }
-  double computeWeight() override { return epic_proc_->weight(coords_); }
+  double computeWeight() override { return epic_proc_->weight(coords_) * 1.e3; }
   void fillKinematics() override {}
 
   std::vector<char*> parseArguments() const {

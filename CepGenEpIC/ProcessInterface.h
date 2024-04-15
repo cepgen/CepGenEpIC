@@ -39,10 +39,13 @@ namespace cepgen {
     template <typename T>
     class ProcessServiceInterface : public ProcessInterface {
     public:
+      using RangeTransformation = std::function<void(std::vector<EPIC::KinematicRange>&)>;
+
       explicit ProcessServiceInterface(T* service,
                                        const EPIC::MonteCarloScenario& scenario,
-                                       const EPIC::MonteCarloTask& task)
-          : service_(service) {
+                                       const EPIC::MonteCarloTask& task,
+                                       const RangeTransformation& rng_transform = nullptr)
+          : service_(service), set_ranges_transform_(rng_transform) {
         if (!service_)
           throw CG_FATAL("ProcessServiceInterface")
               << "Failed to interface the EPIC generator service to build a CepGen-compatible process definition.";
@@ -51,12 +54,18 @@ namespace cepgen {
         service_->computeTask(task);
         if (!service_->getKinematicModule()->runTest())
           CG_WARNING("ProcessServiceInterface") << "Kinematic module test failed.";
-        for (const auto& range : service_->getKinematicModule()->getKinematicRanges(
-                 service_->getExperimentalConditions(), service_->getKinematicRanges()))
+        auto kin_ranges = service_->getKinematicModule()->getKinematicRanges(service_->getExperimentalConditions(),
+                                                                             service_->getKinematicRanges());
+        if (set_ranges_transform_)
+          set_ranges_transform_(kin_ranges);
+        const auto& rc_var_ranges = service_->getRCModule()->getVariableRanges();
+        kin_ranges.insert(kin_ranges.end(), rc_var_ranges.begin(), rc_var_ranges.end());
+        for (const auto& range : kin_ranges)
           ranges_.emplace_back(Limits{range.getMin(), range.getMax()});
-        CG_INFO("ProcessServiceInterface")
-            << "Process service interface initialised for dimension-" << ndim() << " '" << service_->getClassName()
-            << "' process.\n\tKinematic ranges: " << ranges_ << ".";
+
+        CG_INFO("ProcessServiceInterface") << "Process service interface initialised for dimension-" << ndim() << " '"
+                                           << service_->getClassName() << "' process.\n"
+                                           << "\tKinematic ranges: " << ranges_ << ".";
       }
       const std::vector<Limits> ranges() const override { return ranges_; }
       size_t ndim() const override { return ranges_.size(); }
@@ -68,6 +77,7 @@ namespace cepgen {
     private:
       T* service_{nullptr};
       std::vector<Limits> ranges_;
+      RangeTransformation set_ranges_transform_{nullptr};
     };
   }  // namespace epic
 }  // namespace cepgen

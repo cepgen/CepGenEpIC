@@ -36,11 +36,10 @@ namespace cepgen {
       static const unsigned int classId;
       NullEventGenerator* clone() const override;
 
-      void initialise(const std::vector<EPIC::KinematicRange>&, const EPIC::EventGeneratorInterface&) override {}
-      std::pair<std::vector<double>, double> generateEvent() override {
-        return std::make_pair(std::vector<double>{}, 0.);
-      }
-      std::pair<double, double> getIntegral() override { return std::make_pair(0., 0.); }
+      void configure(const ElemUtils::Parameters&);
+      void initialise(const std::vector<EPIC::KinematicRange>&, const EPIC::EventGeneratorInterface&) override;
+      std::pair<std::vector<double>, double> generateEvent() override;
+      std::pair<double, double> getIntegral() override { return std::make_pair(1., 1.); }
     };
   }  // namespace epic
 }  // namespace cepgen

@@ -30,5 +30,20 @@ namespace cepgen {
     NullEventGenerator::NullEventGenerator(const NullEventGenerator& oth) : EPIC::EventGeneratorModule(oth) {}
 
     NullEventGenerator* NullEventGenerator::clone() const { return new NullEventGenerator(*this); }
+
+    void NullEventGenerator::configure(const ElemUtils::Parameters& params) { EventGeneratorModule::configure(params); }
+
+    void NullEventGenerator::initialise(const std::vector<EPIC::KinematicRange>& ranges,
+                                        const EPIC::EventGeneratorInterface& gen_interface) {
+      std::vector<double> coords;
+      for (const auto& range : ranges)
+        coords.emplace_back(range.getMin() + 0.5 * (range.getMax() - range.getMin()));  // "shoot" right in the middle
+      CG_DEBUG("NullEventGenerator") << "Prepared for cross section computation and event generation: "
+                                     << "f(" << coords << ") = " << gen_interface.getEventDistribution(coords) << ".";
+    }
+
+    std::pair<std::vector<double>, double> NullEventGenerator::generateEvent() {
+      throw CG_FATAL("epic:NullEventGenerator") << "No event generation allowed.";
+    }
   }  // namespace epic
 }  // namespace cepgen
