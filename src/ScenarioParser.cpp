@@ -32,7 +32,7 @@ namespace cepgen {
         setDescription(description);
       for (const auto& plist_task : params.get<std::vector<ParametersList> >("tasks"))
         addTask(parseTask(plist_task));
-      CG_INFO("epic:ScenarioParser").log([this](auto& log) {
+      CG_DEBUG("epic:ScenarioParser").log([this](auto& log) {
         const auto sep1 = std::string(70, '=') + "\n", sep2 = std::string(70, '-') + "\n";
         log << "Dump of scenario parsed from CepGen configuration\n"
             << "Date: " << getDate() << "\n"
@@ -118,18 +118,27 @@ namespace cepgen {
 
       auto task_desc = ParametersDescription();
       task_desc.setDescription("EpIC/PARTONS task parameters");
-      task_desc.add("general_configuration", ParametersDescription());
+
+      auto general_desc = ParametersDescription();
+      general_desc.add("number_of_events", 0);
+      general_desc.add("histogram_file_path", "/tmp/test.root"s);
+      task_desc.add("general_configuration", general_desc);
+
       task_desc.add("kinematic_range", ParametersDescription());
       task_desc.add("experimental_conditions", ParametersDescription());
       task_desc.add("computation_configuration", ParametersDescription());
+
       auto gen_desc = ParametersDescription();
       gen_desc.add("EventGeneratorModule", ParametersDescription().setName("NullEventGenerator"));
       task_desc.add("generator_configuration", gen_desc);
+
       task_desc.add("kinematic_configuration", ParametersDescription());
       task_desc.add("rc_configuration", ParametersDescription());
+
       auto writer_desc = ParametersDescription();
       writer_desc.add("WriterModule", ParametersDescription().setName("NullWriter"));
       task_desc.add("writer_configuration", writer_desc);
+
       desc.addParametersDescriptionVector("tasks", task_desc);
       return desc;
     }
