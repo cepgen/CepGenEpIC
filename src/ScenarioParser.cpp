@@ -71,39 +71,42 @@ namespace cepgen {
       return task;
     }
 
-    PARTONS::BaseObjectData ScenarioParser::parseParameters(const ParametersList& params,
-                                                            PARTONS::BaseObjectData& obj,
-                                                            bool first) {
+    PARTONS::BaseObjectData& ScenarioParser::parseParameters(const ParametersList& params,
+                                                             PARTONS::BaseObjectData& obj,
+                                                             bool first) {
       if (params.hasName())  // steering a module
         obj.setModuleClassName(params.name());
       if (const auto modules = params.keysOf<ParametersList>(); !modules.empty()) {  // list of submodules
-        auto mod = obj;
         for (const auto& mod_key : modules) {
           const auto mod_params = params.get<ParametersList>(mod_key);
           if (first) {
-            PARTONS::BaseObjectData mod;
-            mod.setModuleClassName(params.name());
-            mod.setModuleType(mod_key);
-            return parseParameters(mod_params, mod, false);
+            obj.setModuleType(mod_key);
+            obj.setModuleClassName(params.name());
+            return parseParameters(mod_params, obj, false);
           }
-          parseParameters(mod_params, mod.addSubModule(mod_key, mod_params.name()), false);
+          parseParameters(mod_params, obj.addSubModule(mod_key, mod_params.name()), false);
         }
-        return mod;
       }
       // steering the scalar parameters
+      const auto fix_key = [](const std::string& key) -> std::string {
+        if (key == "Lambda")
+          return "lambda";
+        return key;
+      };
       for (const auto& key : params.keysOf<std::string>())
         if (key != cepgen::MODULE_NAME)
-          obj.addParameter(ElemUtils::Parameter(key, params.get<std::string>(key)));
+          obj.addParameter(ElemUtils::Parameter(fix_key(key), params.get<std::string>(key)));
       for (const auto& key : params.keysOf<int>())
-        obj.addParameter(ElemUtils::Parameter(key, params.get<int>(key)));
+        obj.addParameter(ElemUtils::Parameter(fix_key(key), params.get<int>(key)));
       for (const auto& key : params.keysOf<double>())
-        obj.addParameter(ElemUtils::Parameter(key, params.get<double>(key)));
+        obj.addParameter(ElemUtils::Parameter(fix_key(key), params.get<double>(key)));
       for (const auto& key : params.keysOf<Limits>()) {
         const auto lim = params.get<Limits>(key);
-        obj.addParameter(ElemUtils::Parameter(key, std::to_string(lim.min()) + "|" + std::to_string(lim.max())));
+        obj.addParameter(
+            ElemUtils::Parameter(fix_key(key), std::to_string(lim.min()) + "|" + std::to_string(lim.max())));
       }
       for (const auto& key : params.keysOf<std::vector<double> >())
-        obj.addParameter(ElemUtils::Parameter(key, utils::merge(params.get<std::vector<double> >(key), "|")));
+        obj.addParameter(ElemUtils::Parameter(fix_key(key), utils::merge(params.get<std::vector<double> >(key), "|")));
       return obj;
     }
 
@@ -127,7 +130,7 @@ namespace cepgen {
       auto writer_desc = ParametersDescription();
       writer_desc.add("WriterModule", ParametersDescription().setName("NullWriter"));
       task_desc.add("writer_configuration", writer_desc);
-      desc.addParametersDescriptionVector("tasks", task_desc, {ParametersList()});
+      desc.addParametersDescriptionVector("tasks", task_desc);
       return desc;
     }
   }  // namespace epic
