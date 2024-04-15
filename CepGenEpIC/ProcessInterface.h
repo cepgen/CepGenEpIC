@@ -57,9 +57,9 @@ namespace cepgen {
         auto kin_ranges = service_->getKinematicModule()->getKinematicRanges(service_->getExperimentalConditions(),
                                                                              service_->getKinematicRanges());
         if (set_ranges_transform_)
-          set_ranges_transform_(kin_ranges);
+          set_ranges_transform_(kin_ranges);  // apply some process-specific variables changes
         const auto& rc_var_ranges = service_->getRCModule()->getVariableRanges();
-        kin_ranges.insert(kin_ranges.end(), rc_var_ranges.begin(), rc_var_ranges.end());
+        kin_ranges.insert(kin_ranges.end(), rc_var_ranges.begin(), rc_var_ranges.end());  // add RC variables, if any
         for (const auto& range : kin_ranges)
           ranges_.emplace_back(Limits{range.getMin(), range.getMax()});
 
@@ -69,15 +69,12 @@ namespace cepgen {
       }
       const std::vector<Limits> ranges() const override { return ranges_; }
       size_t ndim() const override { return ranges_.size(); }
-      double weight(std::vector<double>& coords) const override {
-        CG_ASSERT(service_);
-        return service_->getEventDistribution(coords);
-      }
+      double weight(std::vector<double>& coords) const override { return service_->getEventDistribution(coords); }
 
     private:
       T* service_{nullptr};
       std::vector<Limits> ranges_;
-      RangeTransformation set_ranges_transform_{nullptr};
+      const RangeTransformation set_ranges_transform_{nullptr};
     };
   }  // namespace epic
 }  // namespace cepgen
