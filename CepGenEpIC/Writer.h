@@ -41,13 +41,14 @@ namespace cepgen {
       void saveGenerationInformation(const EPIC::GenerationInformation&) override {}
       void close() override {}
       void write(const EPIC::Event& evt) override;
-      void write(const std::vector<EPIC::Event>&) override {}
+      void write(const std::vector<EPIC::Event>&) override;
 
       const Event& event() const { return evt_; }
 
     private:
       Event evt_;
       std::map<size_t, size_t> cg_vs_epic_;
+      bool initialised_{false};
     };
   }  // namespace epic
 }  // namespace cepgen

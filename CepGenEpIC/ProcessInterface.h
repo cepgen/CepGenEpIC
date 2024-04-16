@@ -99,8 +99,6 @@ namespace cepgen {
           rescl_coords.emplace_back(ranges_.at(i).x(coords.at(i)));
         evt_gen_->setCoordinates(rescl_coords);
         service_->run();
-        if (writer_->event().empty())
-          return 0.;
         event = writer_->event();
         return service_->getEventDistribution(rescl_coords);
       }

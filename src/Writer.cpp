@@ -37,7 +37,7 @@ namespace cepgen {
       static const auto convert_mom = [](const auto& epic_mom) -> Momentum {
         return Momentum::fromPxPyPzE(epic_mom.Px(), epic_mom.Py(), epic_mom.Pz(), epic_mom.E());
       };
-      if (evt_.empty()) {  // first initialisation of the event content
+      if (!initialised_) {  // first initialisation of the event content
         size_t i = 0;
         for (const auto& type_vs_ppart : evt.getParticles()) {
           const auto& mom = type_vs_ppart.second->getFourMomentum();
@@ -46,7 +46,7 @@ namespace cepgen {
             role = mom.Pz() > 0. ? Particle::Role::IncomingBeam1 : Particle::Role::IncomingBeam2;
           auto part = evt_.addParticle(role);
           part.get().setMomentum(convert_mom(mom), true).setIntegerPdgId(type_vs_ppart.second->getType());
-          cg_vs_epic_[part.get().id()] = i;
+          cg_vs_epic_[part.get().id()] = i++;
         }
         const auto find_part_equiv = [this](const auto& epic_part) -> ParticleRef {
           for (const auto& role : evt_.roles())
@@ -74,11 +74,14 @@ namespace cepgen {
             }
           }
         }
-      } else {
-        const auto& parts = evt.getParticles();
-        for (size_t i = 0; i < parts.size(); ++i)
-          evt_[cg_vs_epic_.at(i)].setMomentum(convert_mom(parts.at(i).second->getFourMomentum()));
+        initialised_ = true;
+        return;
       }
+      const auto& parts = evt.getParticles();
+      for (size_t i = 0; i < parts.size(); ++i)
+        evt_[cg_vs_epic_.at(i)].setMomentum(convert_mom(parts.at(i).second->getFourMomentum()), true);
     }
+
+    void Writer::write(const std::vector<EPIC::Event>&) { throw CG_FATAL("epic:Writer:write") << "Not implemented."; }
   }  // namespace epic
 }  // namespace cepgen

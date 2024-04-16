@@ -118,9 +118,11 @@ namespace cepgen {
 
       auto task_desc = ParametersDescription();
       task_desc.setDescription("EpIC/PARTONS task parameters");
+      task_desc.add("method", "generate"s);
 
       auto general_desc = ParametersDescription();
-      general_desc.add("number_of_events", 0).allow(0);
+      general_desc.add("subprocess_type", "ALL"s);
+      general_desc.add("number_of_events", 0).setDescription("number of events to generate at each run").allow(0);
       general_desc.add("histogram_file_path", "/tmp/test.root"s);
       task_desc.add("general_configuration", general_desc);
 
