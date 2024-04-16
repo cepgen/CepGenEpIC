@@ -16,38 +16,35 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CepGenEpIC_NullWriter_h
-#define CepGenEpIC_NullWriter_h
+#ifndef CepGenEpIC_EventGenerator_h
+#define CepGenEpIC_EventGenerator_h
 
 #include <CepGen/Core/Exception.h>
-#include <CepGen/Event/Event.h>
-#include <modules/writer/WriterModule.h>
+#include <services/GeneratorService.h>
 
 #include <memory>
 
 namespace cepgen {
   namespace epic {
-    class NullWriter : public EPIC::WriterModule {
+    class EventGenerator : public EPIC::EventGeneratorModule {
     public:
-      using EPIC::WriterModule::WriterModule;
-      explicit NullWriter(const std::string& name = "NullWriter");
-      NullWriter(const NullWriter&);
-      virtual ~NullWriter() = default;
+      using EPIC::EventGeneratorModule::EventGeneratorModule;
+      explicit EventGenerator(const std::string& name = "cepgen::epic::EventGenerator");
+      EventGenerator(const EventGenerator&);
+      virtual ~EventGenerator() = default;
 
       static const unsigned int classId;
-      NullWriter* clone() const override;
+      EventGenerator* clone() const override;
 
-      void open() override {}
-      void saveGenerationInformation(const EPIC::GenerationInformation&) override {}
-      void close() override {}
-      void write(const EPIC::Event& evt) override;
-      void write(const std::vector<EPIC::Event>&) override {}
+      void configure(const ElemUtils::Parameters&);
+      void initialise(const std::vector<EPIC::KinematicRange>&, const EPIC::EventGeneratorInterface&) override;
+      std::pair<std::vector<double>, double> generateEvent() override { return std::make_pair(coords_, 1.); }
+      std::pair<double, double> getIntegral() override { return std::make_pair(1., 1.); }
 
-      const Event& event() const { return evt_; }
+      void setCoordinates(const std::vector<double>& coords) { coords_ = coords; }
 
     private:
-      Event evt_;
-      std::map<size_t, size_t> cg_vs_epic_;
+      std::vector<double> coords_;
     };
   }  // namespace epic
 }  // namespace cepgen

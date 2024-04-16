@@ -20,20 +20,20 @@
 #include <beans/physics/Vertex.h>
 #include <partons/BaseObjectRegistry.h>
 
-#include "CepGenEpIC/NullWriter.h"
+#include "CepGenEpIC/Writer.h"
 
 namespace cepgen {
   namespace epic {
-    const unsigned int NullWriter::classId =
-        PARTONS::BaseObjectRegistry::getInstance()->registerBaseObject(new NullWriter("NullWriter"));
+    const unsigned int Writer::classId =
+        PARTONS::BaseObjectRegistry::getInstance()->registerBaseObject(new Writer("cepgen::epic::Writer"));
 
-    NullWriter::NullWriter(const std::string& name) : EPIC::WriterModule(name) {}
+    Writer::Writer(const std::string& name) : EPIC::WriterModule(name) {}
 
-    NullWriter::NullWriter(const NullWriter& oth) : EPIC::WriterModule(oth) {}
+    Writer::Writer(const Writer& oth) : EPIC::WriterModule(oth) {}
 
-    NullWriter* NullWriter::clone() const { return new NullWriter(*this); }
+    Writer* Writer::clone() const { return new Writer(*this); }
 
-    void NullWriter::write(const EPIC::Event& evt) {
+    void Writer::write(const EPIC::Event& evt) {
       static const auto convert_mom = [](const auto& epic_mom) -> Momentum {
         return Momentum::fromPxPyPzE(epic_mom.Px(), epic_mom.Py(), epic_mom.Pz(), epic_mom.E());
       };
@@ -54,7 +54,7 @@ namespace cepgen {
               if (part.get().momentum().p() == convert_mom(epic_part->getFourMomentum()).p())
                 return part;
             }
-          throw CG_FATAL("epic:NullWriter") << "Failed to find an equivalence between the EpIC and CepGen particles.";
+          throw CG_FATAL("epic:Writer") << "Failed to find an equivalence between the EpIC and CepGen particles.";
         };
         for (const auto& pvtx : evt.getVertices()) {
           const auto &pins = pvtx->getParticlesIn(), &pouts = pvtx->getParticlesOut();

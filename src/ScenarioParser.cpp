@@ -129,14 +129,14 @@ namespace cepgen {
       task_desc.add("computation_configuration", ParametersDescription());
 
       auto gen_desc = ParametersDescription();
-      gen_desc.add("EventGeneratorModule", ParametersDescription().setName("NullEventGenerator"));
+      gen_desc.add("EventGeneratorModule", ParametersDescription().setName("cepgen::epic::EventGenerator"));
       task_desc.add("generator_configuration", gen_desc);
 
       task_desc.add("kinematic_configuration", ParametersDescription());
       task_desc.add("rc_configuration", ParametersDescription());
 
       auto writer_desc = ParametersDescription();
-      writer_desc.add("WriterModule", ParametersDescription().setName("NullWriter"));
+      writer_desc.add("WriterModule", ParametersDescription().setName("cepgen::epic::Writer"));
       task_desc.add("writer_configuration", writer_desc);
 
       desc.addParametersDescriptionVector("tasks", task_desc);

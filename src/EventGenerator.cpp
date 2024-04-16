@@ -18,28 +18,29 @@
 
 #include <partons/BaseObjectRegistry.h>
 
-#include "CepGenEpIC/NullEventGenerator.h"
+#include "CepGenEpIC/EventGenerator.h"
 
 namespace cepgen {
   namespace epic {
-    const unsigned int NullEventGenerator::classId =
-        PARTONS::BaseObjectRegistry::getInstance()->registerBaseObject(new NullEventGenerator("NullEventGenerator"));
+    const unsigned int EventGenerator::classId = PARTONS::BaseObjectRegistry::getInstance()->registerBaseObject(
+        new EventGenerator("cepgen::epic::EventGenerator"));
 
-    NullEventGenerator::NullEventGenerator(const std::string& name) : EPIC::EventGeneratorModule(name) {}
+    EventGenerator::EventGenerator(const std::string& name) : EPIC::EventGeneratorModule(name) {}
 
-    NullEventGenerator::NullEventGenerator(const NullEventGenerator& oth) : EPIC::EventGeneratorModule(oth) {}
+    EventGenerator::EventGenerator(const EventGenerator& oth) : EPIC::EventGeneratorModule(oth) {}
 
-    NullEventGenerator* NullEventGenerator::clone() const { return new NullEventGenerator(*this); }
+    EventGenerator* EventGenerator::clone() const { return new EventGenerator(*this); }
 
-    void NullEventGenerator::configure(const ElemUtils::Parameters& params) { EventGeneratorModule::configure(params); }
+    void EventGenerator::configure(const ElemUtils::Parameters& params) { EventGeneratorModule::configure(params); }
 
-    void NullEventGenerator::initialise(const std::vector<EPIC::KinematicRange>& ranges,
-                                        const EPIC::EventGeneratorInterface& gen_interface) {
+    void EventGenerator::initialise(const std::vector<EPIC::KinematicRange>& ranges,
+                                    const EPIC::EventGeneratorInterface& gen_interface) {
       coords_.clear();
       for (const auto& range : ranges)
         coords_.emplace_back(range.getMin() + 0.5 * (range.getMax() - range.getMin()));  // "shoot" right in the middle
-      CG_DEBUG("NullEventGenerator") << "Prepared for cross section computation and event generation: "
-                                     << "f(" << coords_ << ") = " << gen_interface.getEventDistribution(coords_) << ".";
+      CG_DEBUG("epic:EventGenerator") << "Prepared for cross section computation and event generation: "
+                                      << "f(" << coords_ << ") = " << gen_interface.getEventDistribution(coords_)
+                                      << ".";
     }
   }  // namespace epic
 }  // namespace cepgen

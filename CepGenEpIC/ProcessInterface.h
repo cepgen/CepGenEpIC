@@ -26,8 +26,8 @@
 
 #include <vector>
 
-#include "CepGenEpIC/NullEventGenerator.h"
-#include "CepGenEpIC/NullWriter.h"
+#include "CepGenEpIC/EventGenerator.h"
+#include "CepGenEpIC/Writer.h"
 
 namespace cepgen {
   namespace epic {
@@ -81,10 +81,10 @@ namespace cepgen {
         for (const auto& range : kin_ranges)
           ranges_.emplace_back(Limits{range.getMin(), range.getMax()});
         service_->setRanges(ranges_);
-        evt_gen_ = dynamic_cast<NullEventGenerator*>(service_->getEventGeneratorModule().get());
+        evt_gen_ = dynamic_cast<EventGenerator*>(service_->getEventGeneratorModule().get());
         std::vector<double> coords(ranges_.size(), 0.5);
         evt_gen_->setCoordinates(coords);
-        writer_ = dynamic_cast<NullWriter*>(service_->getWriterModule().get());
+        writer_ = dynamic_cast<Writer*>(service_->getWriterModule().get());
         CG_INFO("ProcessServiceInterface") << "Process service interface initialised for dimension-" << ndim() << " '"
                                            << service_->getClassName() << "' process.\n"
                                            << "\tKinematic ranges: " << ranges_ << ".";
@@ -116,8 +116,8 @@ namespace cepgen {
       ProcessServiceWrapper<T>* service_{nullptr};
       std::vector<Limits> ranges_;
       const RangeTransformation set_ranges_transform_{nullptr};
-      NullEventGenerator* evt_gen_{nullptr};
-      NullWriter* writer_{nullptr};
+      EventGenerator* evt_gen_{nullptr};
+      Writer* writer_{nullptr};
     };
   }  // namespace epic
 }  // namespace cepgen
