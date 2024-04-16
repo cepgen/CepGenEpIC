@@ -134,10 +134,7 @@ private:
                                     {Particle::OutgoingBeam2, {PDG::proton}},
                                     {Particle::CentralSystem, {PDG::muon, PDG::muon}}});
   }
-  double computeWeight() override {
-    epic_proc_->generate(lastCoordinates(), event());
-    return epic_proc_->weight(coords_) * 1.e3;
-  }
+  double computeWeight() override { return epic_proc_->generate(coords_, event()); }
   void fillKinematics() override {}
 
   std::vector<char*> parseArguments() const {

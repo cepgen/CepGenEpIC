@@ -36,8 +36,7 @@ namespace cepgen {
       ProcessInterface() {}
       virtual const std::vector<Limits> ranges() const = 0;
       virtual size_t ndim() const = 0;
-      virtual double weight(std::vector<double>&) const = 0;
-      virtual bool generate(const std::vector<double>&, Event&) const = 0;
+      virtual double generate(const std::vector<double>&, Event&) const = 0;
     };
 
     template <typename T>
@@ -94,22 +93,16 @@ namespace cepgen {
       }
       const std::vector<Limits> ranges() const override { return ranges_; }
       size_t ndim() const override { return ranges_.size(); }
-      double weight(std::vector<double>& coords) const override {
-        std::vector<double> rescl_coords;
-        for (size_t i = 0; i < coords.size(); ++i)
-          rescl_coords.emplace_back(ranges_.at(i).x(coords.at(i)));
-        return service_->getEventDistribution(rescl_coords);
-      }
-      bool generate(const std::vector<double>& coords, Event& event) const override {
+      double generate(const std::vector<double>& coords, Event& event) const override {
         std::vector<double> rescl_coords;
         for (size_t i = 0; i < coords.size(); ++i)
           rescl_coords.emplace_back(ranges_.at(i).x(coords.at(i)));
         evt_gen_->setCoordinates(rescl_coords);
         service_->run();
         if (writer_->event().empty())
-          return false;
+          return 0.;
         event = writer_->event();
-        return true;
+        return service_->getEventDistribution(rescl_coords);
       }
 
     private:
