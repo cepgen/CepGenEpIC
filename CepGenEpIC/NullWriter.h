@@ -20,6 +20,7 @@
 #define CepGenEpIC_NullWriter_h
 
 #include <CepGen/Core/Exception.h>
+#include <CepGen/Event/Event.h>
 #include <modules/writer/WriterModule.h>
 
 #include <memory>
@@ -39,8 +40,14 @@ namespace cepgen {
       void open() override {}
       void saveGenerationInformation(const EPIC::GenerationInformation&) override {}
       void close() override {}
-      void write(const EPIC::Event&) override {}
+      void write(const EPIC::Event& evt) override;
       void write(const std::vector<EPIC::Event>&) override {}
+
+      const Event& event() const { return evt_; }
+
+    private:
+      Event evt_;
+      std::map<size_t, size_t> cg_vs_epic_;
     };
   }  // namespace epic
 }  // namespace cepgen

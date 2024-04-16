@@ -35,15 +35,11 @@ namespace cepgen {
 
     void NullEventGenerator::initialise(const std::vector<EPIC::KinematicRange>& ranges,
                                         const EPIC::EventGeneratorInterface& gen_interface) {
-      std::vector<double> coords;
+      coords_.clear();
       for (const auto& range : ranges)
-        coords.emplace_back(range.getMin() + 0.5 * (range.getMax() - range.getMin()));  // "shoot" right in the middle
+        coords_.emplace_back(range.getMin() + 0.5 * (range.getMax() - range.getMin()));  // "shoot" right in the middle
       CG_DEBUG("NullEventGenerator") << "Prepared for cross section computation and event generation: "
-                                     << "f(" << coords << ") = " << gen_interface.getEventDistribution(coords) << ".";
-    }
-
-    std::pair<std::vector<double>, double> NullEventGenerator::generateEvent() {
-      throw CG_FATAL("epic:NullEventGenerator") << "No event generation allowed.";
+                                     << "f(" << coords_ << ") = " << gen_interface.getEventDistribution(coords_) << ".";
     }
   }  // namespace epic
 }  // namespace cepgen

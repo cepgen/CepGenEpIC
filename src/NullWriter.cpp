@@ -16,6 +16,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <beans/physics/Particle.h>
+#include <beans/physics/Vertex.h>
 #include <partons/BaseObjectRegistry.h>
 
 #include "CepGenEpIC/NullWriter.h"
@@ -30,5 +32,53 @@ namespace cepgen {
     NullWriter::NullWriter(const NullWriter& oth) : EPIC::WriterModule(oth) {}
 
     NullWriter* NullWriter::clone() const { return new NullWriter(*this); }
+
+    void NullWriter::write(const EPIC::Event& evt) {
+      static const auto convert_mom = [](const auto& epic_mom) -> Momentum {
+        return Momentum::fromPxPyPzE(epic_mom.Px(), epic_mom.Py(), epic_mom.Pz(), epic_mom.E());
+      };
+      if (evt_.empty()) {  // first initialisation of the event content
+        size_t i = 0;
+        for (const auto& type_vs_ppart : evt.getParticles()) {
+          const auto& mom = type_vs_ppart.second->getFourMomentum();
+          auto role = Particle::Role::CentralSystem;
+          if (type_vs_ppart.first == EPIC::ParticleCodeType::BEAM)
+            role = mom.Pz() > 0. ? Particle::Role::IncomingBeam1 : Particle::Role::IncomingBeam2;
+          auto part = evt_.addParticle(role);
+          part.get().setMomentum(convert_mom(mom), true).setIntegerPdgId(type_vs_ppart.second->getType());
+          cg_vs_epic_[part.get().id()] = i;
+        }
+        const auto find_part_equiv = [this](const auto& epic_part) -> ParticleRef {
+          for (const auto& role : evt_.roles())
+            for (auto& part : evt_[role]) {
+              if (part.get().momentum().p() == convert_mom(epic_part->getFourMomentum()).p())
+                return part;
+            }
+          throw CG_FATAL("epic:NullWriter") << "Failed to find an equivalence between the EpIC and CepGen particles.";
+        };
+        for (const auto& pvtx : evt.getVertices()) {
+          const auto &pins = pvtx->getParticlesIn(), &pouts = pvtx->getParticlesOut();
+          for (const auto& pout : pouts) {
+            auto evt_pout = find_part_equiv(pout);
+            for (const auto& pin : pins) {
+              auto& evt_pin = find_part_equiv(pin).get();
+              evt_pout.get().addMother(evt_pin);
+              if (evt_pin.role() == Particle::Role::IncomingBeam1) {
+                if (evt_pout.get().integerPdgId() == evt_pin.integerPdgId())
+                  evt_pout.get().setRole(Particle::Role::OutgoingBeam1);
+              } else if (evt_pin.role() == Particle::Role::IncomingBeam2) {
+                if (evt_pout.get().integerPdgId() == evt_pin.integerPdgId())
+                  evt_pout.get().setRole(Particle::Role::OutgoingBeam2);
+              } else
+                evt_pin.setRole(Particle::Role::Intermediate);
+            }
+          }
+        }
+      } else {
+        const auto& parts = evt.getParticles();
+        for (size_t i = 0; i < parts.size(); ++i)
+          evt_[cg_vs_epic_.at(i)].setMomentum(convert_mom(parts.at(i).second->getFourMomentum()));
+      }
+    }
   }  // namespace epic
 }  // namespace cepgen

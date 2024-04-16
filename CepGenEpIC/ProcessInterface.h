@@ -22,8 +22,12 @@
 #include <CepGen/Core/Exception.h>
 #include <CepGen/Utils/Limits.h>
 #include <automation/MonteCarloTask.h>
+#include <services/GeneratorService.h>
 
 #include <vector>
+
+#include "CepGenEpIC/NullEventGenerator.h"
+#include "CepGenEpIC/NullWriter.h"
 
 namespace cepgen {
   namespace epic {
@@ -33,6 +37,19 @@ namespace cepgen {
       virtual const std::vector<Limits> ranges() const = 0;
       virtual size_t ndim() const = 0;
       virtual double weight(std::vector<double>&) const = 0;
+      virtual bool generate(const std::vector<double>&, Event&) const = 0;
+    };
+
+    template <typename T>
+    class ProcessServiceWrapper : public T {
+    public:
+      void setRanges(const std::vector<Limits>& ranges) {
+        T::m_histograms.clear();
+        for (const auto& range : ranges)
+          T::m_histograms.emplace_back(
+              new TH1D(Form("h_%zu", T::m_histograms.size()), "", 100, range.min(), range.max()));
+      }
+      void bookHistograms() override {}
     };
 
     /// Interface to an EpIC generator service
@@ -45,12 +62,13 @@ namespace cepgen {
                                        const EPIC::MonteCarloScenario& scenario,
                                        const EPIC::MonteCarloTask& task,
                                        const RangeTransformation& rng_transform = nullptr)
-          : service_(service), set_ranges_transform_(rng_transform) {
+          : service_(static_cast<ProcessServiceWrapper<T>*>(service)), set_ranges_transform_(rng_transform) {
         if (!service_)
           throw CG_FATAL("ProcessServiceInterface")
               << "Failed to interface the EPIC generator service to build a CepGen-compatible process definition.";
         service_->setScenarioDescription(scenario.getDescription());
         service_->setScenarioDate(scenario.getDate());
+        service_->setRanges(std::vector<Limits>(10, {0., 1.}));
         service_->computeTask(task);
         if (!service_->getKinematicModule()->runTest())
           CG_WARNING("ProcessServiceInterface") << "Kinematic module test failed.";
@@ -62,19 +80,44 @@ namespace cepgen {
         kin_ranges.insert(kin_ranges.end(), rc_var_ranges.begin(), rc_var_ranges.end());  // add RC variables, if any
         for (const auto& range : kin_ranges)
           ranges_.emplace_back(Limits{range.getMin(), range.getMax()});
-
+        service_->setRanges(ranges_);
+        evt_gen_ = dynamic_cast<NullEventGenerator*>(service_->getEventGeneratorModule().get());
+        std::vector<double> coords(ranges_.size(), 0.5);
+        evt_gen_->setCoordinates(coords);
+        writer_ = dynamic_cast<NullWriter*>(service_->getWriterModule().get());
         CG_INFO("ProcessServiceInterface") << "Process service interface initialised for dimension-" << ndim() << " '"
                                            << service_->getClassName() << "' process.\n"
                                            << "\tKinematic ranges: " << ranges_ << ".";
+        auto general_params = service_->getGeneralConfiguration();
+        general_params.setNEvents(1);
+        service_->setGeneralConfiguration(general_params);
       }
       const std::vector<Limits> ranges() const override { return ranges_; }
       size_t ndim() const override { return ranges_.size(); }
-      double weight(std::vector<double>& coords) const override { return service_->getEventDistribution(coords); }
+      double weight(std::vector<double>& coords) const override {
+        std::vector<double> rescl_coords;
+        for (size_t i = 0; i < coords.size(); ++i)
+          rescl_coords.emplace_back(ranges_.at(i).x(coords.at(i)));
+        return service_->getEventDistribution(rescl_coords);
+      }
+      bool generate(const std::vector<double>& coords, Event& event) const override {
+        std::vector<double> rescl_coords;
+        for (size_t i = 0; i < coords.size(); ++i)
+          rescl_coords.emplace_back(ranges_.at(i).x(coords.at(i)));
+        evt_gen_->setCoordinates(rescl_coords);
+        service_->run();
+        if (writer_->event().empty())
+          return false;
+        event = writer_->event();
+        return true;
+      }
 
     private:
-      T* service_{nullptr};
+      ProcessServiceWrapper<T>* service_{nullptr};
       std::vector<Limits> ranges_;
       const RangeTransformation set_ranges_transform_{nullptr};
+      NullEventGenerator* evt_gen_{nullptr};
+      NullWriter* writer_{nullptr};
     };
   }  // namespace epic
 }  // namespace cepgen

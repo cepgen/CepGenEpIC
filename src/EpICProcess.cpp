@@ -122,7 +122,7 @@ private:
     }
     coords_.resize(epic_proc_->ndim());
     for (size_t i = 0; i < epic_proc_->ndim(); ++i)
-      defineVariable(coords_.at(i), Mapping::linear, epic_proc_->ranges().at(i), utils::format("x_%zu", i));
+      defineVariable(coords_.at(i), Mapping::linear, {0., 1.}, utils::format("x_%zu", i));
     CG_DEBUG("EpICProcess:prepareKinematics") << "Phase space mapped for dim-" << coords_.size() << " integrand.";
   }
   void addEventContent() override {
@@ -134,7 +134,10 @@ private:
                                     {Particle::OutgoingBeam2, {PDG::proton}},
                                     {Particle::CentralSystem, {PDG::muon, PDG::muon}}});
   }
-  double computeWeight() override { return epic_proc_->weight(coords_) * 1.e3; }
+  double computeWeight() override {
+    epic_proc_->generate(lastCoordinates(), event());
+    return epic_proc_->weight(coords_) * 1.e3;
+  }
   void fillKinematics() override {}
 
   std::vector<char*> parseArguments() const {

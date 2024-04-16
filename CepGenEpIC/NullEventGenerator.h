@@ -38,8 +38,13 @@ namespace cepgen {
 
       void configure(const ElemUtils::Parameters&);
       void initialise(const std::vector<EPIC::KinematicRange>&, const EPIC::EventGeneratorInterface&) override;
-      std::pair<std::vector<double>, double> generateEvent() override;
+      std::pair<std::vector<double>, double> generateEvent() override { return std::make_pair(coords_, 1.); }
       std::pair<double, double> getIntegral() override { return std::make_pair(1., 1.); }
+
+      void setCoordinates(const std::vector<double>& coords) { coords_ = coords; }
+
+    private:
+      std::vector<double> coords_;
     };
   }  // namespace epic
 }  // namespace cepgen

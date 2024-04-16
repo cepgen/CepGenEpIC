@@ -120,7 +120,7 @@ namespace cepgen {
       task_desc.setDescription("EpIC/PARTONS task parameters");
 
       auto general_desc = ParametersDescription();
-      general_desc.add("number_of_events", 0);
+      general_desc.add("number_of_events", 0).allow(0);
       general_desc.add("histogram_file_path", "/tmp/test.root"s);
       task_desc.add("general_configuration", general_desc);
 
