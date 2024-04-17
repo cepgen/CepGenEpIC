@@ -34,11 +34,11 @@ process = cepgen.Module('epic',
                         Lambda = 1.,
                     ),
                     TCSXiConverterModule = cepgen.Module('TCSXiConverterTauToXi'),
-     	            TCSConvolCoeffFunctionModule = cepgen.Module('TCSCFFFromDVCS',
-            	        qcd_order_type = 'LO',
+                    TCSConvolCoeffFunctionModule = cepgen.Module('TCSCFFFromDVCS',
+                        qcd_order_type = 'LO',
                     ),
-     	            DVCSConvolCoeffFunctionModule = cepgen.Module('DVCSCFFCMILOU3DTables',
-            	        qcd_order_type = 'LO',
+                    DVCSConvolCoeffFunctionModule = cepgen.Module('DVCSCFFCMILOU3DTables',
+                        qcd_order_type = 'LO',
                     ),
                 ),
             ),
@@ -52,12 +52,6 @@ process = cepgen.Module('epic',
             ),
         ),
     ],
-    inKinematics = cepgen.Parameters(
-        pz = (50., 7000.),
-        pdgIds = (11, 2212),
-    ),
-    outKinematics = cepgen.Parameters(
-    )
 )
 
 generator = cepgen.Parameters(
