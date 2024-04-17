@@ -44,6 +44,12 @@ find_package(HepMC3 REQUIRED)
 file(GLOB cepgen_epic_sources src/*.cpp)
 file(GLOB_RECURSE epic_sources ${EPIC_SOURCES_DIR}/*.cpp)
 
+#----- copy the input cards
+file(GLOB_RECURSE input_cards RELATIVE ${PROJECT_SOURCE_DIR} cards/*)
+foreach(_files ${input_cards})
+  configure_file(${_files} ${_files} COPYONLY)
+endforeach()
+
 #----- copy the configuration files
 configure_file(data/partons.properties.in ${CMAKE_CURRENT_BINARY_DIR}/data/partons.properties @ONLY)
 configure_file(data/logger.properties.in ${CMAKE_CURRENT_BINARY_DIR}/data/logger.properties @ONLY)
