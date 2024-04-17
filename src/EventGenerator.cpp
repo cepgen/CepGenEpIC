@@ -35,12 +35,21 @@ namespace cepgen {
 
     void EventGenerator::initialise(const std::vector<EPIC::KinematicRange>& ranges,
                                     const EPIC::EventGeneratorInterface& gen_interface) {
+      ranges_.clear();
+      for (const auto& range : ranges)  // transforme EPIC ranges into CepGen Limits
+        ranges_.emplace_back(Limits{range.getMin(), range.getMax()});
+      // initialise the coordinates: "shoot" right in the middle of the range
       coords_.clear();
-      for (const auto& range : ranges)
-        coords_.emplace_back(range.getMin() + 0.5 * (range.getMax() - range.getMin()));  // "shoot" right in the middle
+      for (const auto& range : ranges_)
+        coords_.emplace_back(range.x(0.5));
       CG_DEBUG("epic:EventGenerator") << "Prepared for cross section computation and event generation: "
                                       << "f(" << coords_ << ") = " << gen_interface.getEventDistribution(coords_)
                                       << ".";
+    }
+
+    void EventGenerator::setCoordinates(const std::vector<double>& coords) {
+      for (size_t i = 0; i < ranges_.size(); ++i)
+        coords_[i] = ranges_.at(i).x(coords.at(i));
     }
   }  // namespace epic
 }  // namespace cepgen

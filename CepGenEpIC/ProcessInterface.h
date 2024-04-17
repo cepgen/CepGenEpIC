@@ -67,22 +67,12 @@ namespace cepgen {
               << "Failed to interface the EPIC generator service to build a CepGen-compatible process definition.";
         service_->setScenarioDescription(scenario.getDescription());
         service_->setScenarioDate(scenario.getDate());
-        service_->setRanges(std::vector<Limits>(10, {0., 1.}));
         service_->computeTask(task);
         if (!service_->getKinematicModule()->runTest())
           CG_WARNING("ProcessServiceInterface") << "Kinematic module test failed.";
-        auto kin_ranges = service_->getKinematicModule()->getKinematicRanges(service_->getExperimentalConditions(),
-                                                                             service_->getKinematicRanges());
-        if (set_ranges_transform_)
-          set_ranges_transform_(kin_ranges);  // apply some process-specific variables changes
-        const auto& rc_var_ranges = service_->getRCModule()->getVariableRanges();
-        kin_ranges.insert(kin_ranges.end(), rc_var_ranges.begin(), rc_var_ranges.end());  // add RC variables, if any
-        for (const auto& range : kin_ranges)
-          ranges_.emplace_back(Limits{range.getMin(), range.getMax()});
-        service_->setRanges(ranges_);
         evt_gen_ = dynamic_cast<EventGenerator*>(service_->getEventGeneratorModule().get());
-        std::vector<double> coords(ranges_.size(), 0.5);
-        evt_gen_->setCoordinates(coords);
+        ranges_ = evt_gen_->ranges();
+        service_->setRanges(ranges_);
         writer_ = dynamic_cast<Writer*>(service_->getWriterModule().get());
         CG_INFO("ProcessServiceInterface") << "Process service interface initialised for dimension-" << ndim() << " '"
                                            << service_->getClassName() << "' process.\n"
@@ -94,13 +84,10 @@ namespace cepgen {
       const std::vector<Limits> ranges() const override { return ranges_; }
       size_t ndim() const override { return ranges_.size(); }
       double generate(const std::vector<double>& coords, Event& event) const override {
-        std::vector<double> rescl_coords;
-        for (size_t i = 0; i < coords.size(); ++i)
-          rescl_coords.emplace_back(ranges_.at(i).x(coords.at(i)));
-        evt_gen_->setCoordinates(rescl_coords);
+        evt_gen_->setCoordinates(coords);
         service_->run();
         event = writer_->event();
-        return service_->getEventDistribution(rescl_coords);
+        return service_->getEventDistribution(const_cast<std::vector<double>&>(coords));
       }
 
     private:

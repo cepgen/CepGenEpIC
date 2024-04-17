@@ -20,6 +20,7 @@
 #define CepGenEpIC_EventGenerator_h
 
 #include <CepGen/Core/Exception.h>
+#include <CepGen/Utils/Limits.h>
 #include <services/GeneratorService.h>
 
 #include <memory>
@@ -41,10 +42,12 @@ namespace cepgen {
       std::pair<std::vector<double>, double> generateEvent() override { return std::make_pair(coords_, 1.); }
       std::pair<double, double> getIntegral() override { return std::make_pair(1., 1.); }
 
-      void setCoordinates(const std::vector<double>& coords) { coords_ = coords; }
+      void setCoordinates(const std::vector<double>&);
+      const std::vector<Limits>& ranges() const { return ranges_; }
 
     private:
       std::vector<double> coords_;
+      std::vector<Limits> ranges_;
     };
   }  // namespace epic
 }  // namespace cepgen
